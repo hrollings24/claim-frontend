@@ -1,0 +1,18 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Claim</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="centered" *ngIf="(user$ | async) as user; else loggedOut">
+    <h1>Hello, {{ user.name }}</h1>
+  </div>
+
+  <ng-template #loggedOut>
+    <div class="centered">
+      <h1>Claim</h1>
+      <ion-button (click)="login()">Login / Sign Up</ion-button>
+    </div>
+  </ng-template>
+</ion-content>
