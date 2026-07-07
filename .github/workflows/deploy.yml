@@ -40,6 +40,7 @@ jobs:
             },
           };
           EOF
+          cp src/environments/environment.prod.ts src/environments/environment.ts
 
       - name: Build
         run: npx ionic build --prod
