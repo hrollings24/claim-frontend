@@ -31,6 +31,7 @@ jobs:
           cat > src/environments/environment.prod.ts <<EOF
           export const environment = {
             production: true,
+            apiUrl: '${{ secrets.API_URL }}',
             cognito: {
               userPoolId: '${{ secrets.COGNITO_USER_POOL_ID }}',
               userPoolClientId: '${{ secrets.COGNITO_USER_POOL_CLIENT_ID }}',
