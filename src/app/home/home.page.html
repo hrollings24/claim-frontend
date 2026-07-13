@@ -7,6 +7,10 @@
 <ion-content [fullscreen]="true" class="ion-padding">
   <div class="centered" *ngIf="(user$ | async) as user; else loggedOut">
     <h1>Hello, {{ user.name }}</h1>
+
+    <ion-button (click)="callHello()">Call API</ion-button>
+    <p *ngIf="apiResponse">{{ apiResponse }}</p>
+    <p *ngIf="apiError">{{ apiError }}</p>
   </div>
 
   <ng-template #loggedOut>

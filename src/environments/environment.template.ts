@@ -6,6 +6,7 @@
 
 export const environment = {
   production: false,
+  apiUrl: 'http://localhost:5184',
   cognito: {
     userPoolId: 'REPLACE_ME',
     userPoolClientId: 'REPLACE_ME',
