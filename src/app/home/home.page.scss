@@ -7,3 +7,17 @@
   top: 50%;
   transform: translateY(-50%);
 }
+
+.join {
+  margin-top: 1.5rem;
+}
+
+.error {
+  color: var(--ion-color-danger);
+}
+
+.smoke-test {
+  margin-top: 2rem;
+  text-align: center;
+  color: var(--ion-color-medium);
+}

@@ -1,0 +1,57 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Waiting room</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div *ngIf="error" class="ion-text-center ion-padding-bottom">
+    <p>{{ error }}</p>
+    <ion-button fill="outline" (click)="goHome()">Back to home</ion-button>
+  </div>
+
+  <ng-container *ngIf="game as currentGame">
+    <div class="code-panel ion-text-center">
+      <p class="code-label">Game code</p>
+      <h1 class="code">{{ currentGame.code }}</h1>
+      <p class="code-hint">Share this code for others to join</p>
+    </div>
+
+    <ion-list>
+      <ion-list-header>
+        <ion-label>Players ({{ currentGame.players.length }})</ion-label>
+      </ion-list-header>
+
+      <ion-item *ngFor="let player of currentGame.players">
+        <ion-label>
+          {{ player.name }}
+          <span *ngIf="player.isYou" class="you"> (you)</span>
+        </ion-label>
+        <ion-badge slot="end" *ngIf="player.isHost">Host</ion-badge>
+      </ion-item>
+    </ion-list>
+
+    <div *ngIf="currentGame.status === 'InProgress'" class="ion-text-center ion-padding-vertical">
+      <h2>The game has started</h2>
+    </div>
+
+    <div *ngIf="currentGame.status === 'Lobby'" class="ion-padding-vertical">
+      <ion-button
+        *ngIf="currentGame.youAreHost"
+        expand="block"
+        [disabled]="busy"
+        (click)="start()"
+      >
+        Start game
+      </ion-button>
+
+      <p *ngIf="!currentGame.youAreHost" class="ion-text-center waiting">
+        Waiting for the host to start the game…
+      </p>
+    </div>
+
+    <ion-button expand="block" fill="outline" color="medium" [disabled]="busy" (click)="leave()">
+      Leave game
+    </ion-button>
+  </ng-container>
+</ion-content>

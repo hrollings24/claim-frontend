@@ -15,6 +15,11 @@ export class AuthService {
   private userSubject = new BehaviorSubject<AppUser | null>(null);
   user$ = this.userSubject.asObservable();
 
+  /** The signed-in user as of right now, for callers that can't wait on the observable. */
+  get currentUser(): AppUser | null {
+    return this.userSubject.value;
+  }
+
   constructor() {
     Amplify.configure({
       Auth: {
