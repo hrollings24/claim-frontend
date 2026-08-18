@@ -10,6 +10,7 @@ const routes: Routes = [
   },
   {
     path: 'lobby/:code',
+    canActivate: [authGuard],
     loadChildren: () => import('./lobby/lobby.module').then( m => m.LobbyPageModule)
   },
   {

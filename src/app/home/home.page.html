@@ -9,40 +9,10 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  <div *ngIf="(user$ | async) as user; else loggedOut">
-    <h1 class="ion-text-center">Hello, {{ user.name }}</h1>
-
-    <ion-button expand="block" [disabled]="busy" (click)="createGame()">Create game</ion-button>
-
-    <div class="join">
-      <ion-item>
-        <ion-input
-          label="Game code"
-          labelPlacement="stacked"
-          placeholder="ABC234"
-          maxlength="6"
-          autocapitalize="characters"
-          [(ngModel)]="joinCode"
-        ></ion-input>
-      </ion-item>
-
-      <ion-button
-        expand="block"
-        fill="outline"
-        [disabled]="busy || !joinCode.trim()"
-        (click)="joinGame()"
-      >
-        Join game
-      </ion-button>
-    </div>
-
-    <p *ngIf="gameError" class="ion-text-center error">{{ gameError }}</p>
-
-    <div class="smoke-test">
-      <ion-button size="small" fill="clear" (click)="callHello()">Call API</ion-button>
-      <p *ngIf="apiResponse">{{ apiResponse }}</p>
-      <p *ngIf="apiError">{{ apiError }}</p>
-    </div>
+  <!-- Creating and joining games live in the menu, so there is nothing to repeat here. -->
+  <div *ngIf="(user$ | async) as user; else loggedOut" class="centered">
+    <h1>Hello, {{ user.name }}</h1>
+    <p class="hint">Open the menu to create or join a game.</p>
   </div>
 
   <ng-template #loggedOut>
