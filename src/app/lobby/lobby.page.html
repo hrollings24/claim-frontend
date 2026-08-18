@@ -9,9 +9,9 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
-  <div *ngIf="error" class="ion-text-center ion-padding-bottom">
+  <div *ngIf="error" class="ion-text-center ion-padding-bottom error">
     <p>{{ error }}</p>
-    <ion-button fill="outline" (click)="goHome()">Back to home</ion-button>
+    <ion-button *ngIf="!game" fill="outline" (click)="goHome()">Back to home</ion-button>
   </div>
 
   <ng-container *ngIf="game as currentGame">
@@ -27,12 +27,109 @@
       </ion-list-header>
 
       <ion-item *ngFor="let player of currentGame.players">
-        <ion-label>
-          {{ player.name }}
-          <span *ngIf="player.isYou" class="you"> (you)</span>
+        <ion-label class="ion-text-wrap">
+          {{ player.name }}<span *ngIf="player.isYou" class="muted"> (you)</span>
+          <p>{{ teamNameFor(player) }}</p>
         </ion-label>
         <ion-badge slot="end" *ngIf="player.isHost">Host</ion-badge>
       </ion-item>
+    </ion-list>
+
+    <ion-list>
+      <ion-list-header>
+        <ion-label>Teams ({{ currentGame.teams.length }})</ion-label>
+        <ion-button
+          *ngIf="currentGame.status === 'Lobby'"
+          size="small"
+          [disabled]="busy"
+          (click)="createTeam()"
+        >
+          New team
+        </ion-button>
+      </ion-list-header>
+
+      <ion-item *ngIf="currentGame.teams.length === 0">
+        <ion-label class="ion-text-wrap muted">
+          No teams yet. Create one and you'll be put in it.
+        </ion-label>
+      </ion-item>
+
+      <ion-item *ngFor="let team of currentGame.teams">
+        <ion-label class="ion-text-wrap">
+          {{ team.name }}
+          <p>{{ memberCount(team.id) }} in this team</p>
+        </ion-label>
+
+        <ion-badge slot="end" color="success" *ngIf="currentGame.yourTeamId === team.id">
+          Your team
+        </ion-badge>
+
+        <ion-button
+          slot="end"
+          size="small"
+          fill="outline"
+          *ngIf="currentGame.yourTeamId !== team.id && currentGame.status === 'Lobby'"
+          [disabled]="busy"
+          (click)="joinTeam(team.id)"
+        >
+          Join
+        </ion-button>
+      </ion-item>
+
+      <ion-item *ngIf="currentGame.yourTeamId && currentGame.status === 'Lobby'">
+        <ion-button fill="clear" size="small" [disabled]="busy" (click)="leaveTeam()">
+          Leave my team
+        </ion-button>
+      </ion-item>
+    </ion-list>
+
+    <ion-list>
+      <ion-list-header>
+        <ion-label>Game length</ion-label>
+      </ion-list-header>
+
+      <!-- The length is a game setting, so it follows the same rule as starting: host only. -->
+      <ng-container *ngIf="currentGame.youAreHost && currentGame.status === 'Lobby'; else durationReadOnly">
+        <ion-item>
+          <ion-select
+            label="Hours"
+            labelPlacement="stacked"
+            interface="popover"
+            [(ngModel)]="durationHours"
+            [disabled]="busy"
+            (ionChange)="saveDuration()"
+          >
+            <ion-select-option *ngFor="let hour of hourOptions" [value]="hour">
+              {{ hour }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item>
+          <ion-select
+            label="Minutes"
+            labelPlacement="stacked"
+            interface="popover"
+            [(ngModel)]="durationMinutesPart"
+            [disabled]="busy"
+            (ionChange)="saveDuration()"
+          >
+            <ion-select-option *ngFor="let minute of minuteOptions" [value]="minute">
+              {{ minute }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item *ngIf="!canEditDuration">
+          <ion-label class="ion-text-wrap error">A game has to last at least a minute.</ion-label>
+        </ion-item>
+      </ng-container>
+
+      <ng-template #durationReadOnly>
+        <ion-item>
+          <ion-label>{{ formatDuration(currentGame.durationMinutes) }}</ion-label>
+        </ion-item>
+      </ng-template>
     </ion-list>
 
     <div *ngIf="currentGame.status === 'InProgress'" class="ion-text-center ion-padding-vertical">
@@ -49,7 +146,7 @@
         Start game
       </ion-button>
 
-      <p *ngIf="!currentGame.youAreHost" class="ion-text-center waiting">
+      <p *ngIf="!currentGame.youAreHost" class="ion-text-center muted">
         Waiting for the host to start the game…
       </p>
     </div>

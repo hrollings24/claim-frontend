@@ -8,13 +8,22 @@ export interface GamePlayer {
   name: string;
   isHost: boolean;
   isYou: boolean;
+  teamId: string | null;
+}
+
+export interface GameTeam {
+  id: string;
+  name: string;
 }
 
 export interface Game {
   code: string;
   status: GameStatus;
   youAreHost: boolean;
+  yourTeamId: string | null;
+  durationMinutes: number;
   players: GamePlayer[];
+  teams: GameTeam[];
 }
 
 /** The API explains refusals in a ProblemDetails title — prefer it over a generic message. */
@@ -51,6 +60,27 @@ export class GameService {
 
   start(code: string): Promise<Game> {
     return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/start`);
+  }
+
+  createTeam(code: string, name: string): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/teams`, { name });
+  }
+
+  /** Also how a player switches: their team becomes whichever one they pick. */
+  joinTeam(code: string, teamId: string): Promise<Game> {
+    return this.api.post<Game>(
+      `/api/games/${encodeURIComponent(code)}/teams/${encodeURIComponent(teamId)}/join`,
+    );
+  }
+
+  leaveTeam(code: string): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/teams/leave`);
+  }
+
+  setDuration(code: string, durationMinutes: number): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/duration`, {
+      durationMinutes,
+    });
   }
 
   /**
