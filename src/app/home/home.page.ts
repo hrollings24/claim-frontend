@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { ApiService } from '../api.service';
-import { GameService } from '../game.service';
+import { GameService, joinFailureMessage } from '../game.service';
 
 @Component({
   selector: 'app-home',
@@ -55,7 +55,7 @@ export class HomePage {
       const game = await this.gameService.join(code);
       await this.router.navigateByUrl(`/lobby/${game.code}`);
     } catch (error: unknown) {
-      this.gameError = this.joinFailureMessage(error);
+      this.gameError = joinFailureMessage(error);
     } finally {
       this.busy = false;
     }
@@ -69,14 +69,5 @@ export class HomePage {
     } catch {
       this.apiError = 'Failed to call the API.';
     }
-  }
-
-  /** The API explains refusals in a ProblemDetails title — prefer it over a generic message. */
-  private joinFailureMessage(error: unknown): string {
-    if ((error as { status?: number })?.status === 404) {
-      return 'No game found with that code.';
-    }
-
-    return (error as { error?: { title?: string } })?.error?.title ?? 'Could not join that game.';
   }
 }

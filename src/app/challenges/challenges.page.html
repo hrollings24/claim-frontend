@@ -1,0 +1,59 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+
+    <ion-title>Challenges</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button routerLink="/challenges/new">Add</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-refresher slot="fixed" (ionRefresh)="reload($any($event))">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <p *ngIf="error" class="ion-text-center ion-padding error">{{ error }}</p>
+
+  <ion-list *ngIf="challenges.length > 0">
+    <ion-item button detail *ngFor="let challenge of challenges" (click)="openDetails(challenge)">
+      <ion-label class="ion-text-wrap">
+        <h2>{{ challenge.title }}</h2>
+        <p>{{ challenge.summary }}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+
+  <div *ngIf="!loading && !error && challenges.length === 0" class="ion-text-center ion-padding empty">
+    <p>No challenges yet.</p>
+    <ion-button fill="outline" routerLink="/challenges/new">Add the first one</ion-button>
+  </div>
+
+  <ion-infinite-scroll [disabled]="!hasMore" (ionInfinite)="loadMore($any($event))">
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
+  </ion-infinite-scroll>
+
+  <!-- Further details are deliberately not shown in the list; this is where they surface. -->
+  <ion-modal [isOpen]="selected !== null" (didDismiss)="closeDetails()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title class="ion-text-wrap">{{ selected?.title }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeDetails()">Close</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="ion-padding">
+        <p class="summary">{{ selected?.summary }}</p>
+        <p class="details">{{ selected?.furtherDetails }}</p>
+        <p class="attribution">Added by {{ selected?.createdByName }}</p>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>

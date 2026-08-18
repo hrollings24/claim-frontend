@@ -1,8 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { fetchAuthSession } from 'aws-amplify/auth';
-import { firstValueFrom } from 'rxjs';
-import { environment } from '../environments/environment';
+import { ApiClient } from './api-client.service';
 import { AuthService } from './auth.service';
 
 export type GameStatus = 'Lobby' | 'InProgress';
@@ -20,31 +17,40 @@ export interface Game {
   players: GamePlayer[];
 }
 
+/** The API explains refusals in a ProblemDetails title — prefer it over a generic message. */
+export function joinFailureMessage(error: unknown): string {
+  if ((error as { status?: number })?.status === 404) {
+    return 'No game found with that code.';
+  }
+
+  return (error as { error?: { title?: string } })?.error?.title ?? 'Could not join that game.';
+}
+
 @Injectable({ providedIn: 'root' })
 export class GameService {
   constructor(
-    private http: HttpClient,
+    private api: ApiClient,
     private authService: AuthService,
   ) {}
 
   create(): Promise<Game> {
-    return this.request<Game>('post', '/api/games', this.membership());
+    return this.api.post<Game>('/api/games', this.membership());
   }
 
   get(code: string): Promise<Game> {
-    return this.request<Game>('get', `/api/games/${encodeURIComponent(code)}`);
+    return this.api.get<Game>(`/api/games/${encodeURIComponent(code)}`);
   }
 
   join(code: string): Promise<Game> {
-    return this.request<Game>('post', `/api/games/${encodeURIComponent(code)}/join`, this.membership());
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/join`, this.membership());
   }
 
   leave(code: string): Promise<void> {
-    return this.request<void>('post', `/api/games/${encodeURIComponent(code)}/leave`);
+    return this.api.post<void>(`/api/games/${encodeURIComponent(code)}/leave`);
   }
 
   start(code: string): Promise<Game> {
-    return this.request<Game>('post', `/api/games/${encodeURIComponent(code)}/start`);
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/start`);
   }
 
   /**
@@ -53,19 +59,5 @@ export class GameService {
    */
   private membership(): { displayName: string } {
     return { displayName: this.authService.currentUser?.name ?? '' };
-  }
-
-  private async request<T>(method: 'get' | 'post', path: string, body?: unknown): Promise<T> {
-    const session = await fetchAuthSession();
-    const accessToken = session.tokens?.accessToken?.toString();
-    const headers = new HttpHeaders({ Authorization: `Bearer ${accessToken}` });
-    const url = `${environment.apiUrl}${path}`;
-
-    const response$ =
-      method === 'get'
-        ? this.http.get<T>(url, { headers })
-        : this.http.post<T>(url, body ?? {}, { headers });
-
-    return firstValueFrom(response$);
   }
 }

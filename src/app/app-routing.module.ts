@@ -1,6 +1,8 @@
 import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 
+import { authGuard } from './auth.guard';
+
 const routes: Routes = [
   {
     path: 'home',
@@ -9,6 +11,16 @@ const routes: Routes = [
   {
     path: 'lobby/:code',
     loadChildren: () => import('./lobby/lobby.module').then( m => m.LobbyPageModule)
+  },
+  {
+    path: 'challenges/new',
+    canActivate: [authGuard],
+    loadChildren: () => import('./challenge-new/challenge-new.module').then( m => m.ChallengeNewPageModule)
+  },
+  {
+    path: 'challenges',
+    canActivate: [authGuard],
+    loadChildren: () => import('./challenges/challenges.module').then( m => m.ChallengesPageModule)
   },
   {
     path: '',

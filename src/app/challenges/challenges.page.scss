@@ -1,0 +1,22 @@
+.error {
+  color: var(--ion-color-danger);
+}
+
+.empty {
+  color: var(--ion-color-medium);
+}
+
+.summary {
+  font-weight: 600;
+}
+
+.details {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.attribution {
+  color: var(--ion-color-medium);
+  font-size: 0.85rem;
+  margin-top: 2rem;
+}

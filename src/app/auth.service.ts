@@ -51,6 +51,16 @@ export class AuthService {
     this.refreshUser();
   }
 
+  /** Authoritative check for route guards, which can run before the session has resolved. */
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      await getCurrentUser();
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   login(): Promise<void> {
     return signInWithRedirect();
   }

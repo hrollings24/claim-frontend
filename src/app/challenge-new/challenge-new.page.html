@@ -1,0 +1,52 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/challenges"></ion-back-button>
+    </ion-buttons>
+
+    <ion-title>New challenge</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <ion-list>
+    <ion-item>
+      <ion-input
+        label="Title"
+        labelPlacement="stacked"
+        placeholder="What is the challenge?"
+        maxlength="120"
+        [(ngModel)]="title"
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-textarea
+        label="Summary"
+        labelPlacement="stacked"
+        placeholder="One line shown in the list"
+        maxlength="300"
+        [autoGrow]="true"
+        [(ngModel)]="summary"
+      ></ion-textarea>
+    </ion-item>
+
+    <ion-item>
+      <ion-textarea
+        label="Further details"
+        labelPlacement="stacked"
+        placeholder="Shown when someone opens the challenge"
+        maxlength="4000"
+        rows="6"
+        [autoGrow]="true"
+        [(ngModel)]="furtherDetails"
+      ></ion-textarea>
+    </ion-item>
+  </ion-list>
+
+  <p *ngIf="error" class="ion-text-center error">{{ error }}</p>
+
+  <ion-button expand="block" class="ion-margin-top" [disabled]="!canSave" (click)="save()">
+    {{ saving ? 'Saving…' : 'Save challenge' }}
+  </ion-button>
+</ion-content>
