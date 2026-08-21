@@ -41,11 +41,11 @@
       </ion-item>
     </ion-list>
 
-    <ion-list [inset]="true" *ngIf="currentGame.status === 'Lobby'">
+    <ion-list [inset]="true" *ngIf="!currentGame.board">
       <ion-list-header>
         <ion-label>Teams ({{ currentGame.teams.length }})</ion-label>
         <ion-button
-          *ngIf="currentGame.status === 'Lobby'"
+          *ngIf="!currentGame.board"
           size="small"
           [disabled]="busy"
           (click)="createTeam()"
@@ -74,7 +74,7 @@
           slot="end"
           size="small"
           fill="outline"
-          *ngIf="currentGame.yourTeamId !== team.id && currentGame.status === 'Lobby'"
+          *ngIf="currentGame.yourTeamId !== team.id && !currentGame.board"
           [disabled]="busy"
           (click)="joinTeam(team.id)"
         >
@@ -82,20 +82,20 @@
         </ion-button>
       </ion-item>
 
-      <ion-item *ngIf="currentGame.yourTeamId && currentGame.status === 'Lobby'">
+      <ion-item *ngIf="currentGame.yourTeamId && !currentGame.board">
         <ion-button fill="clear" size="small" [disabled]="busy" (click)="leaveTeam()">
           Leave my team
         </ion-button>
       </ion-item>
     </ion-list>
 
-    <ion-list [inset]="true" *ngIf="currentGame.status === 'Lobby'">
+    <ion-list [inset]="true" *ngIf="!currentGame.board">
       <ion-list-header>
         <ion-label>Game length</ion-label>
       </ion-list-header>
 
       <!-- The length is a game setting, so it follows the same rule as starting: host only. -->
-      <ng-container *ngIf="currentGame.youAreHost && currentGame.status === 'Lobby'; else durationReadOnly">
+      <ng-container *ngIf="currentGame.youAreHost && !currentGame.board; else durationReadOnly">
         <ion-item>
           <ion-select
             label="Hours"
@@ -239,7 +239,7 @@
       </ng-container>
     </ng-container>
 
-    <div *ngIf="currentGame.status === 'Lobby'" class="ion-padding-vertical">
+    <div *ngIf="!currentGame.board" class="ion-padding-vertical">
       <ion-button
         *ngIf="currentGame.youAreHost"
         expand="block"
