@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { InfiniteScrollCustomEvent, RefresherCustomEvent } from '@ionic/angular';
 import { Challenge, ChallengeService } from '../challenge.service';
 
@@ -19,7 +19,10 @@ export class ChallengesPage {
 
   private nextCursor: string | null = null;
 
-  constructor(private challengeService: ChallengeService) {}
+  constructor(
+    private challengeService: ChallengeService,
+    private zone: NgZone,
+  ) {}
 
   /** Reloads on entry so a challenge just added on the next screen appears on the way back. */
   ionViewWillEnter(): void {
@@ -66,7 +69,16 @@ export class ChallengesPage {
     this.selected = challenge;
   }
 
+  /**
+   * Ionic moves the modal out of this page and into ion-app when it presents, and its buttons
+   * and dismiss events fire outside Angular's zone. Clearing `selected` therefore has to
+   * re-enter the zone: without a change detection pass the [isOpen] binding never reaches the
+   * element, so the modal stays on screen and — worse — Angular still believes it wrote `true`,
+   * so opening the next challenge wouldn't re-present it either.
+   */
   closeDetails(): void {
-    this.selected = null;
+    this.zone.run(() => {
+      this.selected = null;
+    });
   }
 }
