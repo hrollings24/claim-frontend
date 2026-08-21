@@ -9,6 +9,12 @@
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Waiting room</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
   <div *ngIf="error" class="ion-text-center ion-padding-bottom error">
     <p>{{ error }}</p>
     <ion-button *ngIf="!game" fill="outline" (click)="goHome()">Back to home</ion-button>
@@ -21,7 +27,7 @@
       <p class="code-hint">Share this code for others to join</p>
     </div>
 
-    <ion-list>
+    <ion-list [inset]="true">
       <ion-list-header>
         <ion-label>Players ({{ currentGame.players.length }})</ion-label>
       </ion-list-header>
@@ -35,7 +41,7 @@
       </ion-item>
     </ion-list>
 
-    <ion-list>
+    <ion-list [inset]="true">
       <ion-list-header>
         <ion-label>Teams ({{ currentGame.teams.length }})</ion-label>
         <ion-button
@@ -83,7 +89,7 @@
       </ion-item>
     </ion-list>
 
-    <ion-list>
+    <ion-list [inset]="true">
       <ion-list-header>
         <ion-label>Game length</ion-label>
       </ion-list-header>
