@@ -14,9 +14,17 @@
 
   <link rel="icon" type="image/png" href="assets/icon/favicon.png" />
 
-  <!-- add to homescreen for ios -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#2f4bff" />
+
+  <!-- Added to the home screen, iOS only launches without browser chrome if it sees the
+       apple-prefixed flag or a manifest saying standalone. Without either it is just a
+       bookmark, and every screen keeps the Safari address bar. -->
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Claim" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="apple-touch-icon" href="assets/icon/icon-180.png" />
 </head>
 
 <body>
