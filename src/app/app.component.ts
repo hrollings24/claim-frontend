@@ -28,6 +28,21 @@ export class AppComponent {
     await this.router.navigateByUrl('/challenges');
   }
 
+  async logout(): Promise<void> {
+    await this.menu.close();
+
+    try {
+      await this.authService.logout();
+    } catch {
+      await this.notify('Could not log out.');
+      return;
+    }
+
+    // Route guards only run on navigation, so signing out while sitting on a guarded page
+    // would leave the player looking at it until they happened to move.
+    await this.router.navigateByUrl('/home');
+  }
+
   async createGame(): Promise<void> {
     if (this.busy) {
       return;
