@@ -22,14 +22,15 @@
           <ion-label>Challenges</ion-label>
         </ion-item>
       </ion-list>
-
-      <!-- Its own group, the way iOS separates an account action from navigation. -->
-      <ion-list>
-        <ion-item button [disabled]="busy" (click)="logout()">
-          <ion-label color="danger">Log out</ion-label>
-        </ion-item>
-      </ion-list>
     </ion-content>
+
+    <!-- Pinned to the bottom of the drawer rather than sitting in the navigation list, since
+         logging out isn't somewhere you go. ion-footer without a toolbar keeps it plain. -->
+    <ion-footer class="menu-footer">
+      <ion-button fill="clear" size="small" color="medium" [disabled]="busy" (click)="logout()">
+        Log out
+      </ion-button>
+    </ion-footer>
   </ion-menu>
 
   <ion-router-outlet id="main-content"></ion-router-outlet>

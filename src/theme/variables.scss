@@ -4,24 +4,27 @@
 /*
  * iOS renders grouped content as white cards floating on a grey page. Ionic's default
  * background is white, which makes inset lists invisible — the cards and the page are the
- * same colour. These are Apple's system grouped background values for each appearance.
+ * same colour. These are Apple's system grouped background values for each appearance,
+ * named so anything outside ion-content (the menu footer) can sit on the same ground.
  */
-ion-content {
-  --background: #f2f2f7;
-}
-
-ion-item {
-  --background: #ffffff;
+:root {
+  --app-grouped-background: #f2f2f7;
+  --app-grouped-card: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
-  ion-content {
-    --background: #000000;
+  :root {
+    --app-grouped-background: #000000;
+    --app-grouped-card: #1c1c1e;
   }
+}
 
-  ion-item {
-    --background: #1c1c1e;
-  }
+ion-content {
+  --background: var(--app-grouped-background);
+}
+
+ion-item {
+  --background: var(--app-grouped-card);
 }
 
 /*
