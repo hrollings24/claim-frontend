@@ -29,6 +29,9 @@
     <ion-item button detail *ngFor="let challenge of challenges" (click)="openDetails(challenge)">
       <ion-label class="ion-text-wrap">
         <h2>{{ challenge.title }}</h2>
+        <ion-badge [color]="challenge.type === 'Steal' ? 'danger' : 'primary'">
+          {{ challenge.type }}
+        </ion-badge>
         <p>{{ challenge.summary }}</p>
       </ion-label>
     </ion-item>

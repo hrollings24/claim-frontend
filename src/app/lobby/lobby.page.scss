@@ -22,3 +22,18 @@
 .error {
   color: var(--ion-color-danger);
 }
+
+.picked {
+  --background: var(--ion-color-primary-tint);
+}
+
+.counter {
+  background: var(--ion-color-warning-tint);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  margin: 0 1rem 1rem;
+}
+
+.hint {
+  color: var(--ion-color-medium);
+}

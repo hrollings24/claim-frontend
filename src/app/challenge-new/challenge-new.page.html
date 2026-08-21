@@ -15,6 +15,21 @@
     </ion-toolbar>
   </ion-header>
 
+  <ion-segment [(ngModel)]="type">
+    <ion-segment-button value="Claim">
+      <ion-label>Claim</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="Steal">
+      <ion-label>Steal</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <p class="type-hint">
+    {{ type === 'Claim'
+       ? 'Played to take an unclaimed borough — exploration and travel suit these.'
+       : 'Played to take a borough off another team — skill challenges suit these.' }}
+  </p>
+
   <ion-list [inset]="true">
     <ion-item>
       <ion-input

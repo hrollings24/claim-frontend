@@ -41,7 +41,7 @@
       </ion-item>
     </ion-list>
 
-    <ion-list [inset]="true">
+    <ion-list [inset]="true" *ngIf="currentGame.status === 'Lobby'">
       <ion-list-header>
         <ion-label>Teams ({{ currentGame.teams.length }})</ion-label>
         <ion-button
@@ -89,7 +89,7 @@
       </ion-item>
     </ion-list>
 
-    <ion-list [inset]="true">
+    <ion-list [inset]="true" *ngIf="currentGame.status === 'Lobby'">
       <ion-list-header>
         <ion-label>Game length</ion-label>
       </ion-list-header>
@@ -138,9 +138,106 @@
       </ng-template>
     </ion-list>
 
-    <div *ngIf="currentGame.status === 'InProgress'" class="ion-text-center ion-padding-vertical">
-      <h2>The game has started</h2>
-    </div>
+    <ng-container *ngIf="currentGame.status !== 'Lobby' && board as currentBoard">
+      <ion-list [inset]="true">
+        <ion-list-header>
+          <ion-label>Scores</ion-label>
+          <ion-note slot="end">{{ timeRemaining() }}</ion-note>
+        </ion-list-header>
+
+        <ion-item *ngFor="let score of currentBoard.scores">
+          <ion-label class="ion-text-wrap">
+            {{ score.name }}
+            <p>{{ score.territories }} boroughs, {{ score.bonusPoints }} bonus</p>
+          </ion-label>
+          <ion-badge slot="end">{{ score.score }}</ion-badge>
+        </ion-item>
+      </ion-list>
+
+      <div *ngIf="currentGame.status === 'Finished'" class="ion-text-center ion-padding-vertical">
+        <h2>Time's up</h2>
+        <p class="muted">Highest score wins.</p>
+      </div>
+
+      <ng-container *ngIf="currentGame.status === 'InProgress'">
+        <!-- A failed steal against you buys a short window to take one of theirs instead. -->
+        <div *ngIf="currentBoard.yourCounterWindow as counter" class="counter">
+          Counter open against {{ counter.againstTeamName }} — play a claim card on one of their
+          boroughs before it closes.
+        </div>
+
+        <ion-list [inset]="true">
+          <ion-list-header>
+            <ion-label>Your hand</ion-label>
+          </ion-list-header>
+
+          <ion-item
+            button
+            *ngFor="let card of currentBoard.yourHand"
+            [class.picked]="selectedCard?.id === card.id"
+            [disabled]="busy"
+            (click)="selectCard(card)"
+          >
+            <ion-label class="ion-text-wrap">
+              {{ card.title }}
+              <p>{{ card.summary }}</p>
+            </ion-label>
+            <ion-badge slot="end" [color]="card.type === 'Steal' ? 'danger' : 'primary'">
+              {{ card.type }}
+            </ion-badge>
+          </ion-item>
+
+          <ion-item *ngIf="currentBoard.yourHand.length === 0">
+            <ion-label class="muted ion-text-wrap">
+              You're not on a team, so you have no hand.
+            </ion-label>
+          </ion-item>
+        </ion-list>
+
+        <p class="hint ion-text-center" *ngIf="selectedCard">
+          Pick where to play "{{ selectedCard.title }}".
+        </p>
+
+        <ion-list [inset]="true">
+          <ion-list-header>
+            <ion-label>On the board</ion-label>
+          </ion-list-header>
+
+          <ion-item
+            *ngFor="let borough of currentBoard.active"
+            [button]="canPlayOnActive(borough)"
+            [disabled]="busy"
+            (click)="canPlayOnActive(borough) ? playAt(borough.id, borough.name) : null"
+          >
+            <ion-label class="ion-text-wrap">
+              {{ borough.name }}
+              <p>{{ borough.zone }} London</p>
+            </ion-label>
+            <ion-badge slot="end" color="warning" *ngIf="borough.isHot">HOT +1</ion-badge>
+          </ion-item>
+        </ion-list>
+
+        <ion-list [inset]="true" *ngIf="currentBoard.territories.length > 0">
+          <ion-list-header>
+            <ion-label>Held boroughs</ion-label>
+          </ion-list-header>
+
+          <ion-item
+            *ngFor="let territory of currentBoard.territories"
+            [button]="canPlayOnTerritory(territory)"
+            [disabled]="busy"
+            (click)="canPlayOnTerritory(territory) ? playAt(territory.id, territory.name) : null"
+          >
+            <ion-label class="ion-text-wrap">
+              {{ territory.name }}
+              <p>
+                {{ territory.teamName }}<span *ngIf="territory.isLocked"> · locked</span>
+              </p>
+            </ion-label>
+          </ion-item>
+        </ion-list>
+      </ng-container>
+    </ng-container>
 
     <div *ngIf="currentGame.status === 'Lobby'" class="ion-padding-vertical">
       <ion-button

@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChallengeService } from '../challenge.service';
+import { ChallengeService, ChallengeType } from '../challenge.service';
 
 @Component({
   selector: 'app-challenge-new',
@@ -9,6 +9,9 @@ import { ChallengeService } from '../challenge.service';
   standalone: false,
 })
 export class ChallengeNewPage {
+  /** Claim cards are played on unclaimed boroughs, steal cards on ones another team holds. */
+  type: ChallengeType = 'Claim';
+
   title = '';
   summary = '';
   furtherDetails = '';
@@ -23,6 +26,7 @@ export class ChallengeNewPage {
 
   /** Ionic keeps pages alive, so the form is cleared on entry rather than left as it was. */
   ionViewWillEnter(): void {
+    this.type = 'Claim';
     this.title = '';
     this.summary = '';
     this.furtherDetails = '';
@@ -47,6 +51,7 @@ export class ChallengeNewPage {
     this.error = null;
     try {
       await this.challengeService.create({
+        type: this.type,
         title: this.title.trim(),
         summary: this.summary.trim(),
         furtherDetails: this.furtherDetails.trim(),

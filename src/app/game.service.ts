@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { ApiClient } from './api-client.service';
 import { AuthService } from './auth.service';
 
-export type GameStatus = 'Lobby' | 'InProgress';
+export type GameStatus = 'Lobby' | 'InProgress' | 'Finished';
 
 export interface GamePlayer {
   name: string;
@@ -16,6 +16,55 @@ export interface GameTeam {
   name: string;
 }
 
+export interface ActiveBorough {
+  id: string;
+  name: string;
+  zone: 'Inner' | 'Outer';
+  isHot: boolean;
+}
+
+export interface Territory {
+  id: string;
+  name: string;
+  teamId: string;
+  teamName: string;
+  isLocked: boolean;
+  lockedUntil: string | null;
+}
+
+export interface HandCard {
+  id: string;
+  type: 'Claim' | 'Steal';
+  title: string;
+  summary: string;
+  furtherDetails: string;
+}
+
+export interface TeamScore {
+  teamId: string;
+  name: string;
+  territories: number;
+  bonusPoints: number;
+  score: number;
+}
+
+export interface CounterWindow {
+  againstTeamId: string;
+  againstTeamName: string;
+  expiresAt: string;
+}
+
+export interface GameBoard {
+  active: ActiveBorough[];
+  hotBoroughId: string | null;
+  hotRotatesAt: string;
+  territories: Territory[];
+  yourHand: HandCard[];
+  scores: TeamScore[];
+  yourCounterWindow: CounterWindow | null;
+  endsAt: string | null;
+}
+
 export interface Game {
   code: string;
   status: GameStatus;
@@ -24,6 +73,7 @@ export interface Game {
   durationMinutes: number;
   players: GamePlayer[];
   teams: GameTeam[];
+  board: GameBoard | null;
 }
 
 /** The API explains refusals in a ProblemDetails title — prefer it over a generic message. */
@@ -75,6 +125,18 @@ export class GameService {
 
   leaveTeam(code: string): Promise<Game> {
     return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/teams/leave`);
+  }
+
+  /**
+   * Plays a card at a borough, reporting whether the challenge came off. The server works out
+   * whether that is a claim, a steal or a counter-attack.
+   */
+  playCard(code: string, cardId: string, boroughId: string, succeeded: boolean): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/play`, {
+      cardId,
+      boroughId,
+      succeeded,
+    });
   }
 
   setDuration(code: string, durationMinutes: number): Promise<Game> {

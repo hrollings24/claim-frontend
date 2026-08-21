@@ -2,8 +2,11 @@ import { Injectable } from '@angular/core';
 import { ApiClient } from './api-client.service';
 import { AuthService } from './auth.service';
 
+export type ChallengeType = 'Claim' | 'Steal';
+
 export interface Challenge {
   id: string;
+  type: ChallengeType;
   title: string;
   summary: string;
   furtherDetails: string;
@@ -17,6 +20,7 @@ export interface ChallengePage {
 }
 
 export interface NewChallenge {
+  type: ChallengeType;
   title: string;
   summary: string;
   furtherDetails: string;

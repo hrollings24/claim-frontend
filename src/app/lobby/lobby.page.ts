@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-import { Game, GamePlayer, GameService } from '../game.service';
+import { ActiveBorough, Game, GamePlayer, GameService, HandCard, Territory } from '../game.service';
 
 /**
  * The roster changes rarely (someone joins, someone leaves), so it is polled rather than
@@ -21,6 +21,9 @@ export class LobbyPage {
   error: string | null = null;
   busy = false;
 
+  /** The card the player has picked up, waiting for them to choose where to play it. */
+  selectedCard: HandCard | null = null;
+
   /** Game length as the two fields the lobby shows, kept whole in minutes on the server. */
   durationHours = 1;
   durationMinutesPart = 0;
@@ -28,7 +31,7 @@ export class LobbyPage {
   readonly hourOptions = Array.from({ length: 24 }, (_, hour) => hour);
   readonly minuteOptions = Array.from({ length: 12 }, (_, index) => index * 5);
 
-  private code = '';
+  code = '';
   private pollHandle: ReturnType<typeof setInterval> | null = null;
   private refreshing = false;
 
@@ -104,6 +107,80 @@ export class LobbyPage {
     } finally {
       this.refreshing = false;
     }
+  }
+
+  get board() {
+    return this.game?.board ?? null;
+  }
+
+  /** Territories held by anyone other than the player's own team — the stealable ones. */
+  get opposingTerritories(): Territory[] {
+    return (this.board?.territories ?? []).filter(t => t.teamId !== this.game?.yourTeamId);
+  }
+
+  get ownTerritories(): Territory[] {
+    return (this.board?.territories ?? []).filter(t => t.teamId === this.game?.yourTeamId);
+  }
+
+  /**
+   * A claim card goes on the open board; a steal card goes at another team's borough. During a
+   * counter window a claim card can also be aimed at the team that just failed a steal.
+   */
+  canPlayOnActive(borough: ActiveBorough): boolean {
+    return this.selectedCard?.type === 'Claim' && !!borough;
+  }
+
+  canPlayOnTerritory(territory: Territory): boolean {
+    if (!this.selectedCard || territory.isLocked || territory.teamId === this.game?.yourTeamId) {
+      return false;
+    }
+
+    if (this.selectedCard.type === 'Steal') {
+      return true;
+    }
+
+    return this.board?.yourCounterWindow?.againstTeamId === territory.teamId;
+  }
+
+  selectCard(card: HandCard): void {
+    this.selectedCard = this.selectedCard?.id === card.id ? null : card;
+  }
+
+  timeRemaining(): string {
+    const endsAt = this.board?.endsAt;
+    if (!endsAt) {
+      return '';
+    }
+
+    const minutes = Math.max(0, Math.round((new Date(endsAt).getTime() - Date.now()) / 60000));
+
+    return this.formatDuration(minutes) + ' left';
+  }
+
+  /** Asks how the challenge went, then plays the card either way — a spent card is spent. */
+  async playAt(boroughId: string, boroughName: string): Promise<void> {
+    const card = this.selectedCard;
+    if (!card) {
+      return;
+    }
+
+    const alert = await this.alerts.create({
+      header: card.title,
+      subHeader: boroughName,
+      message: card.furtherDetails,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Failed', handler: () => void this.submitPlay(card, boroughId, false) },
+        { text: 'Done it', handler: () => void this.submitPlay(card, boroughId, true) },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  private async submitPlay(card: HandCard, boroughId: string, succeeded: boolean): Promise<void> {
+    this.selectedCard = null;
+    await this.act(() => this.gameService.playCard(this.code, card.id, boroughId, succeeded));
   }
 
   async createTeam(): Promise<void> {
