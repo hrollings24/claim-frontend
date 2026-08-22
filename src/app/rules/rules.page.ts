@@ -14,8 +14,7 @@ export class RulesPage {
   readonly activeBoroughs = 6;
   readonly handSize = 5;
   readonly hotBonus = 1;
-  readonly hotRotation = '60–90 minutes';
-  readonly lockLength = '60–90 minutes';
-  readonly counterWindow = '10–15 minutes';
+  readonly hotRotation = '90 minutes';
+  readonly counterWindow = '15 minutes';
   readonly boroughCount = 32;
 }

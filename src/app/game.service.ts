@@ -28,8 +28,8 @@ export interface Territory {
   name: string;
   teamId: string;
   teamName: string;
+  /** Locked boroughs are settled for the rest of the game. */
   isLocked: boolean;
-  lockedUntil: string | null;
 }
 
 export interface HandCard {

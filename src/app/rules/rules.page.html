@@ -58,13 +58,13 @@
           <span class="key">{{ hotBonus + 1 }} points instead of 1</span>.
         </p>
         <p>
-          It moves every {{ hotRotation }}, and immediately if someone claims it. A hot borough
+          It moves every {{ hotRotation }}, and straight away if someone claims it. A hot borough
           is always one nobody holds — so it is always up for grabs, and always a decision about
           whether the journey is worth it.
         </p>
         <p class="aside">
-          The bonus is banked the moment you claim it. If the borough is stolen from you later,
-          the bonus point stays yours.
+          A borough claimed while hot is locked for the rest of the game, so nobody can take it
+          back off you.
         </p>
       </div>
     </ion-accordion>
@@ -100,9 +100,18 @@
           gain one.
         </p>
         <p>
-          Fail, and the team you attacked gets a <span class="key">counter window</span> of
-          {{ counterWindow }}. During it they can play a claim card at any of your boroughs and
-          take one off you. Attacking is not free.
+          Fail, and the team you attacked gets <span class="key">{{ counterWindow }}</span> to hit
+          back. Wherever they happen to be, they complete a claim challenge — and if they manage
+          it, they take any borough of yours they like. No travelling to it, no restriction on
+          which one, beyond it not being locked.
+        </p>
+        <p>
+          The window stays open for the full {{ counterWindow }}, so a failed attempt doesn't end
+          it — they can try again with another card until the time runs out.
+        </p>
+        <p class="aside">
+          Only the team that was attacked gets this, and only against the team that attacked
+          them. Attacking is not free.
         </p>
       </div>
     </ion-accordion>
@@ -113,13 +122,14 @@
       </ion-item>
       <div class="body ion-padding" slot="content">
         <p>
-          A borough taken by stealing, or claimed while hot, is <span class="key">locked for
-          {{ lockLength }}</span>. Nobody can contest it until the lock lifts, after which it is
-          held as normal.
+          A borough taken by stealing, or claimed while it was hot, is
+          <span class="key">locked for the rest of the game</span>. It cannot be contested again
+          by anyone — it is settled.
         </p>
         <p>
-          It stops a borough being fought over back and forth all afternoon, and gives whoever
-          made the journey something to show for it.
+          So the boroughs still worth fighting over are the ones taken by an ordinary claim. Every
+          steal and every hot claim takes one off the table permanently, and the game tightens as
+          it goes.
         </p>
       </div>
     </ion-accordion>
