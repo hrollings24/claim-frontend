@@ -1,18 +1,34 @@
 .code-panel {
-  margin-bottom: 1.5rem;
+  background: var(--app-navy);
+  border-radius: 1rem;
+  color: #fff;
+  margin: 0 1rem 1.5rem;
+  padding: 1.25rem 1rem;
 }
 
 .code {
-  font-size: 3rem;
-  font-weight: 700;
-  letter-spacing: 0.35rem;
-  margin: 0.25rem 0;
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: 0.4rem;
+  // The code is dictated and typed by hand, so the digits need to line up and read cleanly.
+  font-variant-numeric: tabular-nums;
+  margin: 0.35rem 0;
+  // Letter-spacing adds a trailing gap that throws the centring out.
+  text-indent: 0.4rem;
 }
 
 .code-label,
 .code-hint {
-  color: var(--ion-color-medium);
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.8rem;
   margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.code-hint {
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .muted {

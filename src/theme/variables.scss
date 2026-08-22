@@ -35,3 +35,27 @@ ion-header[collapse="condense"] ion-toolbar {
   --background: transparent;
   --border-color: transparent;
 }
+
+/*
+ * Brand palette, taken from the app icon: a deep navy ground, the borough red and blue, and
+ * white. Ionic needs each colour as a set — base, rgb, contrast and the two steps either side —
+ * so components can build hovers, activated states and readable text from one declaration.
+ */
+:root {
+  --app-navy: #0f2038;
+  --app-navy-rgb: 15, 32, 56;
+
+  --ion-color-primary: #1f5fd0;
+  --ion-color-primary-rgb: 31, 95, 208;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #1b54b7;
+  --ion-color-primary-tint: #356fd5;
+
+  --ion-color-danger: #e0261c;
+  --ion-color-danger-rgb: 224, 38, 28;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #c52119;
+  --ion-color-danger-tint: #e33c33;
+}

@@ -1,6 +1,8 @@
-<ion-header [translucent]="true">
+<!-- Signed out there is nothing to navigate to, so the bar is dropped and the brand gets the
+     whole screen. -->
+<ion-header [translucent]="true" *ngIf="user$ | async">
   <ion-toolbar>
-    <ion-buttons slot="start" *ngIf="user$ | async">
+    <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
     </ion-buttons>
 
@@ -8,7 +10,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" class="ion-padding">
+<ion-content [fullscreen]="true">
   <!-- Creating and joining games live in the menu, so there is nothing to repeat here. -->
   <div *ngIf="(user$ | async) as user; else loggedOut" class="centered">
     <h1>Hello, {{ user.name }}</h1>
@@ -16,9 +18,19 @@
   </div>
 
   <ng-template #loggedOut>
-    <div class="centered">
-      <h1>Claim</h1>
-      <ion-button (click)="login()">Login / Sign Up</ion-button>
+    <div class="hero">
+      <div class="wordmark">
+        <span class="wordmark-london">London</span>
+        <span class="wordmark-borough">Borough</span>
+        <span class="wordmark-conquest">Conquest</span>
+      </div>
+
+      <p class="tagline">Claim London's boroughs before the other teams do.</p>
+
+      <div class="hero-actions">
+        <ion-button expand="block" (click)="login()">Login / Sign Up</ion-button>
+        <ion-button expand="block" fill="clear" routerLink="/rules">Read the rules</ion-button>
+      </div>
     </div>
   </ng-template>
 </ion-content>

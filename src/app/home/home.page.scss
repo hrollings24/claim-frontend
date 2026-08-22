@@ -11,3 +11,64 @@
 .hint {
   color: var(--ion-color-medium);
 }
+
+.hero {
+  // Covers the content area outright: with no toolbar above it, the brand runs edge to edge.
+  position: absolute;
+  inset: 0;
+  background: var(--app-navy);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+
+  padding: calc(2rem + var(--ion-safe-area-top, 0px)) 1.75rem
+    calc(2rem + var(--ion-safe-area-bottom, 0px));
+  text-align: center;
+}
+
+.wordmark {
+  display: flex;
+  flex-direction: column;
+  line-height: 0.92;
+  // Stacked and tightly tracked, the way it sits on the icon.
+  letter-spacing: -0.02em;
+}
+
+.wordmark span {
+  font-size: 2.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.wordmark-london {
+  color: #fff;
+}
+
+.wordmark-borough {
+  color: var(--ion-color-danger);
+}
+
+.wordmark-conquest {
+  color: var(--ion-color-primary-tint);
+  // The third line is the quiet one on the icon: smaller, spaced out, not shouting.
+  font-size: 1.1rem !important;
+  letter-spacing: 0.42em;
+  margin-top: 0.5rem;
+  // Tracking adds a trailing gap that throws the centring out.
+  text-indent: 0.42em;
+}
+
+.tagline {
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  max-width: 20rem;
+  line-height: 1.5;
+}
+
+.hero-actions {
+  width: 100%;
+  max-width: 20rem;
+}
