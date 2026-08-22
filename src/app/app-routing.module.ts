@@ -19,6 +19,11 @@ const routes: Routes = [
     loadChildren: () => import('./challenge-new/challenge-new.module').then( m => m.ChallengeNewPageModule)
   },
   {
+    path: 'challenges/:id/edit',
+    canActivate: [authGuard],
+    loadChildren: () => import('./challenge-new/challenge-new.module').then( m => m.ChallengeNewPageModule)
+  },
+  {
     path: 'challenges',
     canActivate: [authGuard],
     loadChildren: () => import('./challenges/challenges.module').then( m => m.ChallengesPageModule)

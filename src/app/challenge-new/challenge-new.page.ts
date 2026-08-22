@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { problemMessage } from '../api-client.service';
 import { ChallengeService, ChallengeType } from '../challenge.service';
 
@@ -18,20 +18,49 @@ export class ChallengeNewPage {
   furtherDetails = '';
 
   saving = false;
+  loading = false;
   error: string | null = null;
+
+  /** Set when the page was opened to change an existing challenge rather than write a new one. */
+  private editingId: string | null = null;
 
   constructor(
     private challengeService: ChallengeService,
     private router: Router,
+    private route: ActivatedRoute,
   ) {}
 
-  /** Ionic keeps pages alive, so the form is cleared on entry rather than left as it was. */
+  get isEditing(): boolean {
+    return this.editingId !== null;
+  }
+
+  /** Ionic keeps pages alive, so the form is reset on entry rather than left as it was. */
   ionViewWillEnter(): void {
     this.type = 'Claim';
     this.title = '';
     this.summary = '';
     this.furtherDetails = '';
     this.error = null;
+    this.editingId = this.route.snapshot.paramMap.get('id');
+
+    if (this.editingId !== null) {
+      void this.load(this.editingId);
+    }
+  }
+
+  private async load(id: string): Promise<void> {
+    this.loading = true;
+    try {
+      const challenge = await this.challengeService.get(id);
+      this.type = challenge.type;
+      this.title = challenge.title;
+      this.summary = challenge.summary;
+      this.furtherDetails = challenge.furtherDetails;
+    } catch (error: unknown) {
+      this.error = problemMessage(error, 'Could not load that challenge.');
+    } finally {
+      this.loading = false;
+    }
   }
 
   get canSave(): boolean {
@@ -51,12 +80,16 @@ export class ChallengeNewPage {
     this.saving = true;
     this.error = null;
     try {
-      await this.challengeService.create({
+      const challenge = {
         type: this.type,
         title: this.title.trim(),
         summary: this.summary.trim(),
         furtherDetails: this.furtherDetails.trim(),
-      });
+      };
+
+      await (this.editingId === null
+        ? this.challengeService.create(challenge)
+        : this.challengeService.update(this.editingId, challenge));
 
       await this.router.navigateByUrl('/challenges');
     } catch (error: unknown) {

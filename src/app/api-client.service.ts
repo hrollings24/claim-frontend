@@ -24,6 +24,18 @@ export class ApiClient {
     );
   }
 
+  async put<T>(path: string, body: unknown = {}): Promise<T> {
+    return firstValueFrom(
+      this.http.put<T>(`${environment.apiUrl}${path}`, body, { headers: await this.headers() }),
+    );
+  }
+
+  async delete<T>(path: string): Promise<T> {
+    return firstValueFrom(
+      this.http.delete<T>(`${environment.apiUrl}${path}`, { headers: await this.headers() }),
+    );
+  }
+
   private async headers(): Promise<HttpHeaders> {
     const session = await fetchAuthSession();
     const accessToken = session.tokens?.accessToken?.toString();

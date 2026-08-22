@@ -1,5 +1,7 @@
 import { Component, NgZone } from '@angular/core';
-import { InfiniteScrollCustomEvent, RefresherCustomEvent } from '@ionic/angular';
+import { Router } from '@angular/router';
+import { AlertController, InfiniteScrollCustomEvent, RefresherCustomEvent } from '@ionic/angular';
+import { problemMessage } from '../api-client.service';
 import { Challenge, ChallengeService } from '../challenge.service';
 
 @Component({
@@ -22,6 +24,8 @@ export class ChallengesPage {
   constructor(
     private challengeService: ChallengeService,
     private zone: NgZone,
+    private router: Router,
+    private alerts: AlertController,
   ) {}
 
   /** Reloads on entry so a challenge just added on the next screen appears on the way back. */
@@ -62,6 +66,37 @@ export class ChallengesPage {
       this.error = 'Could not load more challenges.';
     } finally {
       await event.target.complete();
+    }
+  }
+
+  async edit(challenge: Challenge): Promise<void> {
+    this.closeDetails();
+    await this.router.navigateByUrl(`/challenges/${challenge.id}/edit`);
+  }
+
+  /** Removing a challenge takes it out of the deck for everyone, so it asks first. */
+  async confirmDelete(challenge: Challenge): Promise<void> {
+    const alert = await this.alerts.create({
+      header: 'Delete challenge',
+      message: `"${challenge.title}" will be removed from the deck for everyone.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Delete', role: 'destructive', handler: () => void this.remove(challenge) },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  private async remove(challenge: Challenge): Promise<void> {
+    this.closeDetails();
+    try {
+      await this.challengeService.remove(challenge.id);
+      this.challenges = this.challenges.filter(c => c.id !== challenge.id);
+    } catch (error: unknown) {
+      this.zone.run(() => {
+        this.error = problemMessage(error, 'Could not delete that challenge.');
+      });
     }
   }
 
