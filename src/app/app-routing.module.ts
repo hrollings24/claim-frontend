@@ -14,6 +14,10 @@ const routes: Routes = [
     loadChildren: () => import('./lobby/lobby.module').then( m => m.LobbyPageModule)
   },
   {
+    path: 'rules',
+    loadChildren: () => import('./rules/rules.module').then( m => m.RulesPageModule)
+  },
+  {
     path: 'challenges/new',
     canActivate: [authGuard],
     loadChildren: () => import('./challenge-new/challenge-new.module').then( m => m.ChallengeNewPageModule)

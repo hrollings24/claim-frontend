@@ -43,6 +43,11 @@ export class AppComponent {
     await this.router.navigateByUrl('/home');
   }
 
+  async openRules(): Promise<void> {
+    await this.menu.close();
+    await this.router.navigateByUrl('/rules');
+  }
+
   async createGame(): Promise<void> {
     if (this.busy) {
       return;

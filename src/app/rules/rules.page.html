@@ -1,0 +1,143 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+
+    <ion-title>Rules</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Rules</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <div class="intro">
+    <p>
+      Teams roam London claiming boroughs. Every claim is a challenge someone has written —
+      travel somewhere, find something, hit a target. Most borough points when the clock runs
+      out wins.
+    </p>
+  </div>
+
+  <div class="loop">
+    <span>Move</span>
+    <span>Complete a challenge</span>
+    <span>Claim</span>
+    <span>Contest</span>
+  </div>
+
+  <ion-accordion-group>
+    <ion-accordion value="boroughs">
+      <ion-item slot="header">
+        <ion-label>The board</ion-label>
+      </ion-item>
+      <div class="body ion-padding" slot="content">
+        <p>
+          <span class="key">{{ activeBoroughs }} boroughs</span> are on offer at any moment, drawn
+          from London's {{ boroughCount }}. Everything on the board is unclaimed — claiming one
+          takes it off the board and into your territory, and another borough takes its place.
+        </p>
+        <p>
+          Replacements come from the same part of the city, inner or outer, so the board keeps a
+          mix of near and far rather than drifting to one edge of London.
+        </p>
+      </div>
+    </ion-accordion>
+
+    <ion-accordion value="hot">
+      <ion-item slot="header">
+        <ion-label>The hot borough</ion-label>
+      </ion-item>
+      <div class="body ion-padding" slot="content">
+        <p>
+          One borough on the board is always <span class="key">hot</span>. Claim it and you score
+          <span class="key">{{ hotBonus + 1 }} points instead of 1</span>.
+        </p>
+        <p>
+          It moves every {{ hotRotation }}, and immediately if someone claims it. A hot borough
+          is always one nobody holds — so it is always up for grabs, and always a decision about
+          whether the journey is worth it.
+        </p>
+        <p class="aside">
+          The bonus is banked the moment you claim it. If the borough is stolen from you later,
+          the bonus point stays yours.
+        </p>
+      </div>
+    </ion-accordion>
+
+    <ion-accordion value="cards">
+      <ion-item slot="header">
+        <ion-label>Your hand</ion-label>
+      </ion-item>
+      <div class="body ion-padding" slot="content">
+        <p>
+          Each team holds <span class="key">{{ handSize }} cards</span>, dealt from the challenges
+          everyone has written. Play one and it is spent, whether or not you managed it, and a new
+          card takes its place.
+        </p>
+        <p>
+          <span class="key">Claim cards</span> are played on the open board. <span class="key">Steal
+          cards</span> are played on boroughs another team already holds.
+        </p>
+        <p class="aside">
+          Nothing can check whether you really found that postcard, so you report the outcome
+          yourself. The game runs on trust.
+        </p>
+      </div>
+    </ion-accordion>
+
+    <ion-accordion value="stealing">
+      <ion-item slot="header">
+        <ion-label>Stealing, and hitting back</ion-label>
+      </ion-item>
+      <div class="body ion-padding" slot="content">
+        <p>
+          A successful steal takes the borough — a two point swing, since they lose one and you
+          gain one.
+        </p>
+        <p>
+          Fail, and the team you attacked gets a <span class="key">counter window</span> of
+          {{ counterWindow }}. During it they can play a claim card at any of your boroughs and
+          take one off you. Attacking is not free.
+        </p>
+      </div>
+    </ion-accordion>
+
+    <ion-accordion value="locks">
+      <ion-item slot="header">
+        <ion-label>Locks</ion-label>
+      </ion-item>
+      <div class="body ion-padding" slot="content">
+        <p>
+          A borough taken by stealing, or claimed while hot, is <span class="key">locked for
+          {{ lockLength }}</span>. Nobody can contest it until the lock lifts, after which it is
+          held as normal.
+        </p>
+        <p>
+          It stops a borough being fought over back and forth all afternoon, and gives whoever
+          made the journey something to show for it.
+        </p>
+      </div>
+    </ion-accordion>
+
+    <ion-accordion value="scoring">
+      <ion-item slot="header">
+        <ion-label>Winning</ion-label>
+      </ion-item>
+      <div class="body ion-padding" slot="content">
+        <p>
+          <span class="key">One point per borough held</span>, plus any hot bonuses you banked
+          along the way. Highest score when the clock runs out wins.
+        </p>
+        <p>
+          The host sets how long the game lasts before starting it, and the clock is visible on
+          the board throughout.
+        </p>
+      </div>
+    </ion-accordion>
+  </ion-accordion-group>
+</ion-content>

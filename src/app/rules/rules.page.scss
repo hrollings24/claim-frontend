@@ -1,0 +1,59 @@
+.intro {
+  padding: 0 1rem;
+}
+
+.intro p {
+  color: var(--ion-color-medium);
+  line-height: 1.5;
+}
+
+.loop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem 1rem;
+}
+
+.loop span {
+  background: var(--app-grouped-card);
+  border-radius: 1rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.loop span::after {
+  content: ' →';
+  color: var(--ion-color-medium);
+  font-weight: 400;
+}
+
+.loop span:last-child::after {
+  content: '';
+}
+
+ion-accordion ion-label {
+  font-weight: 600;
+}
+
+.body {
+  padding: 0 0.25rem 0.5rem;
+  line-height: 1.55;
+}
+
+.body p {
+  margin: 0 0 0.75rem;
+}
+
+.body p:last-child {
+  margin-bottom: 0;
+}
+
+.key {
+  font-weight: 600;
+}
+
+.aside {
+  color: var(--ion-color-medium);
+  font-size: 0.85rem;
+}
