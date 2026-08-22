@@ -9,3 +9,35 @@
     display: none;
   }
 }
+
+.account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.account-identity {
+  // An address can be longer than the drawer is wide; let it shrink and clip rather than
+  // pushing the sign-out control off the edge.
+  min-width: 0;
+  padding-left: 0.5rem;
+}
+
+.account-name,
+.account-email {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.account-email {
+  font-size: 0.75rem;
+  color: var(--ion-color-medium);
+}

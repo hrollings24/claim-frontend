@@ -27,9 +27,17 @@
     <!-- Pinned to the bottom of the drawer rather than sitting in the navigation list, since
          logging out isn't somewhere you go. ion-footer without a toolbar keeps it plain. -->
     <ion-footer class="menu-footer">
-      <ion-button fill="clear" size="small" color="medium" [disabled]="busy" (click)="logout()">
-        Log out
-      </ion-button>
+      <div class="account">
+        <!-- Next to the sign-out control, so it is obvious which account is about to be left. -->
+        <div class="account-identity" *ngIf="user$ | async as user">
+          <p class="account-name" *ngIf="user.name">{{ user.name }}</p>
+          <p class="account-email">{{ user.email }}</p>
+        </div>
+
+        <ion-button fill="clear" size="small" color="medium" [disabled]="busy" (click)="logout()">
+          Log out
+        </ion-button>
+      </div>
     </ion-footer>
   </ion-menu>
 
