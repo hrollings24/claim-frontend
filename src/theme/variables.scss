@@ -1,24 +1,6 @@
 // For information on how to create your own theme, please refer to:
 // https://ionicframework.com/docs/theming/
 
-/*
- * iOS renders grouped content as white cards floating on a grey page. Ionic's default
- * background is white, which makes inset lists invisible — the cards and the page are the
- * same colour. These are Apple's system grouped background values for each appearance,
- * named so anything outside ion-content (the menu footer) can sit on the same ground.
- */
-:root {
-  --app-grouped-background: #f2f2f7;
-  --app-grouped-card: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --app-grouped-background: #000000;
-    --app-grouped-card: #1c1c1e;
-  }
-}
-
 ion-content {
   --background: var(--app-grouped-background);
 }
@@ -37,25 +19,86 @@ ion-header[collapse="condense"] ion-toolbar {
 }
 
 /*
- * Brand palette, taken from the app icon: a deep navy ground, the borough red and blue, and
- * white. Ionic needs each colour as a set — base, rgb, contrast and the two steps either side —
- * so components can build hovers, activated states and readable text from one declaration.
+ * Brand palette, sampled from the app icon rather than guessed: the navy ground, the borough
+ * red and the borough blue. Ionic wants each colour as a set — base, rgb, contrast and a step
+ * either side — so components derive hovers, pressed states and readable text from one entry.
+ *
+ * Scoped to the mode class rather than plain :root on purpose. Ionic's dark palette sets its
+ * backgrounds under `:root.ios`, and a class beats a bare pseudo-class, so a plain `:root` here
+ * loses and the app comes out black instead of navy.
  */
-:root {
-  --app-navy: #0f2038;
-  --app-navy-rgb: 15, 32, 56;
+:root.ios,
+:root.md {
+  --app-navy: #0b1b30;
+  --app-navy-rgb: 11, 27, 48;
 
-  --ion-color-primary: #1f5fd0;
-  --ion-color-primary-rgb: 31, 95, 208;
+  --ion-color-primary: #1f5caa;
+  --ion-color-primary-rgb: 31, 92, 170;
   --ion-color-primary-contrast: #ffffff;
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #1b54b7;
-  --ion-color-primary-tint: #356fd5;
+  --ion-color-primary-shade: #1b5196;
+  --ion-color-primary-tint: #356cb2;
 
-  --ion-color-danger: #e0261c;
-  --ion-color-danger-rgb: 224, 38, 28;
+  --ion-color-danger: #da2c29;
+  --ion-color-danger-rgb: 218, 44, 41;
   --ion-color-danger-contrast: #ffffff;
   --ion-color-danger-contrast-rgb: 255, 255, 255;
-  --ion-color-danger-shade: #c52119;
-  --ion-color-danger-tint: #e33c33;
+  --ion-color-danger-shade: #c02724;
+  --ion-color-danger-tint: #de413e;
+
+  --ion-background-color: #0b1b30;
+  --ion-background-color-rgb: 11, 27, 48;
+
+  --ion-text-color: #ffffff;
+  --ion-text-color-rgb: 255, 255, 255;
+
+  --ion-toolbar-background: #0b1b30;
+  --ion-item-background: #1c2b3e;
+  --ion-card-background: #1c2b3e;
+
+  // Grouped surfaces: the page sits on the brand navy, cards a shade above it.
+  --app-grouped-background: #0b1b30;
+  --app-grouped-card: #1c2b3e;
+
+  // Ionic builds borders, separators and muted text from these ramps; generating them from the
+  // navy keeps those details on-brand instead of falling back to neutral grey.
+  --ion-color-step-50: #17263a;
+  --ion-color-step-100: #233245;
+  --ion-color-step-150: #303d4f;
+  --ion-color-step-200: #3c4959;
+  --ion-color-step-250: #485464;
+  --ion-color-step-300: #545f6e;
+  --ion-color-step-350: #606b78;
+  --ion-color-step-400: #6d7683;
+  --ion-color-step-450: #79828d;
+  --ion-color-step-500: #858d98;
+  --ion-color-step-550: #9198a2;
+  --ion-color-step-600: #9da4ac;
+  --ion-color-step-650: #aaafb7;
+  --ion-color-step-700: #b6bbc1;
+  --ion-color-step-750: #c2c6cb;
+  --ion-color-step-800: #ced1d6;
+  --ion-color-step-850: #dadde0;
+  --ion-color-step-900: #e7e8ea;
+  --ion-color-step-950: #f3f4f5;
+
+  --ion-background-color-step-50: #17263a;
+  --ion-background-color-step-100: #233245;
+  --ion-background-color-step-150: #303d4f;
+  --ion-background-color-step-200: #3c4959;
+  --ion-background-color-step-250: #485464;
+  --ion-background-color-step-300: #545f6e;
+  --ion-background-color-step-350: #606b78;
+  --ion-background-color-step-400: #6d7683;
+  --ion-background-color-step-450: #79828d;
+  --ion-background-color-step-500: #858d98;
+  --ion-background-color-step-550: #9198a2;
+  --ion-background-color-step-600: #9da4ac;
+  --ion-background-color-step-650: #aaafb7;
+  --ion-background-color-step-700: #b6bbc1;
+  --ion-background-color-step-750: #c2c6cb;
+  --ion-background-color-step-800: #ced1d6;
+  --ion-background-color-step-850: #dadde0;
+  --ion-background-color-step-900: #e7e8ea;
+  --ion-background-color-step-950: #f3f4f5;
 }

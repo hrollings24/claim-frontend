@@ -1,5 +1,7 @@
 .code-panel {
-  background: var(--app-navy);
+  // The page is navy now, so the panel needs its own footing rather than the same ground.
+  background: var(--app-grouped-card);
+  border: 1px solid var(--ion-color-primary);
   border-radius: 1rem;
   color: #fff;
   margin: 0 1rem 1.5rem;
