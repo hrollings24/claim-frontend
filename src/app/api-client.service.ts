@@ -31,3 +31,19 @@ export class ApiClient {
     return new HttpHeaders({ Authorization: `Bearer ${accessToken}` });
   }
 }
+
+/**
+ * Turns an API failure into something worth showing. ASP.NET puts field-level problems in an
+ * `errors` map and leaves `title` as a generic "one or more validation errors occurred", which
+ * on its own tells the reader nothing about what to change.
+ */
+export function problemMessage(error: unknown, fallback: string): string {
+  const body = (error as { error?: { title?: string; errors?: Record<string, string[]> } })?.error;
+
+  const fieldProblems = ([] as string[]).concat(...Object.values(body?.errors ?? {}));
+  if (fieldProblems.length > 0) {
+    return fieldProblems.join(' ');
+  }
+
+  return body?.title ?? fallback;
+}

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
+import { problemMessage } from '../api-client.service';
 import { ChallengeService, ChallengeType } from '../challenge.service';
 
 @Component({
@@ -59,8 +60,7 @@ export class ChallengeNewPage {
 
       await this.router.navigateByUrl('/challenges');
     } catch (error: unknown) {
-      this.error =
-        (error as { error?: { title?: string } })?.error?.title ?? 'Could not save the challenge.';
+      this.error = problemMessage(error, 'Could not save the challenge.');
     } finally {
       this.saving = false;
     }
