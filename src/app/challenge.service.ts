@@ -16,11 +16,6 @@ export interface Challenge {
   isYours: boolean;
 }
 
-export interface ChallengePage {
-  challenges: Challenge[];
-  nextCursor: string | null;
-}
-
 export interface NewChallenge {
   type: ChallengeType;
   title: string;
@@ -35,11 +30,9 @@ export class ChallengeService {
     private authService: AuthService,
   ) {}
 
-  /** Newest first. Pass the previous page's cursor to continue from where it stopped. */
-  list(cursor?: string | null): Promise<ChallengePage> {
-    const query = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
-
-    return this.api.get<ChallengePage>(`/api/challenges${query}`);
+  /** The whole deck, alphabetically. Small enough to hold, and filtering it is instant. */
+  list(): Promise<Challenge[]> {
+    return this.api.get<Challenge[]>('/api/challenges');
   }
 
   get(id: string): Promise<Challenge> {

@@ -1,8 +1,8 @@
 import { Component, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
-import { AlertController, InfiniteScrollCustomEvent, RefresherCustomEvent } from '@ionic/angular';
+import { AlertController, RefresherCustomEvent } from '@ionic/angular';
 import { problemMessage } from '../api-client.service';
-import { Challenge, ChallengeService } from '../challenge.service';
+import { Challenge, ChallengeService, ChallengeType } from '../challenge.service';
 
 @Component({
   selector: 'app-challenges',
@@ -19,7 +19,8 @@ export class ChallengesPage {
   loading = false;
   error: string | null = null;
 
-  private nextCursor: string | null = null;
+  /** Which half of the deck to show. Filtering happens here because the list is already whole. */
+  filter: ChallengeType | 'All' = 'All';
 
   constructor(
     private challengeService: ChallengeService,
@@ -33,39 +34,27 @@ export class ChallengesPage {
     void this.reload();
   }
 
-  get hasMore(): boolean {
-    return this.nextCursor !== null;
+  get visible(): Challenge[] {
+    return this.filter === 'All'
+      ? this.challenges
+      : this.challenges.filter(challenge => challenge.type === this.filter);
+  }
+
+  /** True when there are challenges, but none of the kind currently being shown. */
+  get filteredEverythingOut(): boolean {
+    return this.challenges.length > 0 && this.visible.length === 0;
   }
 
   async reload(event?: RefresherCustomEvent): Promise<void> {
     this.loading = true;
     this.error = null;
     try {
-      const page = await this.challengeService.list();
-      this.challenges = page.challenges;
-      this.nextCursor = page.nextCursor;
+      this.challenges = await this.challengeService.list();
     } catch {
       this.error = 'Could not load challenges.';
     } finally {
       this.loading = false;
       await event?.target.complete();
-    }
-  }
-
-  async loadMore(event: InfiniteScrollCustomEvent): Promise<void> {
-    if (this.nextCursor === null) {
-      await event.target.complete();
-      return;
-    }
-
-    try {
-      const page = await this.challengeService.list(this.nextCursor);
-      this.challenges = [...this.challenges, ...page.challenges];
-      this.nextCursor = page.nextCursor;
-    } catch {
-      this.error = 'Could not load more challenges.';
-    } finally {
-      await event.target.complete();
     }
   }
 

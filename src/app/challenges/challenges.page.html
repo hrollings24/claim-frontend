@@ -23,10 +23,16 @@
     <ion-refresher-content></ion-refresher-content>
   </ion-refresher>
 
+  <ion-segment [(ngModel)]="filter" class="type-filter">
+    <ion-segment-button value="All"><ion-label>All</ion-label></ion-segment-button>
+    <ion-segment-button value="Claim"><ion-label>Claim</ion-label></ion-segment-button>
+    <ion-segment-button value="Steal"><ion-label>Steal</ion-label></ion-segment-button>
+  </ion-segment>
+
   <p *ngIf="error" class="ion-text-center ion-padding error">{{ error }}</p>
 
-  <ion-list [inset]="true" *ngIf="challenges.length > 0">
-    <ion-item button detail *ngFor="let challenge of challenges" (click)="openDetails(challenge)">
+  <ion-list [inset]="true" *ngIf="visible.length > 0">
+    <ion-item button detail *ngFor="let challenge of visible" (click)="openDetails(challenge)">
       <ion-label class="ion-text-wrap">
         <h2>{{ challenge.title }}</h2>
         <ion-badge [color]="challenge.type === 'Steal' ? 'danger' : 'primary'">
@@ -42,9 +48,11 @@
     <ion-button fill="outline" routerLink="/challenges/new">Add the first one</ion-button>
   </div>
 
-  <ion-infinite-scroll [disabled]="!hasMore" (ionInfinite)="loadMore($any($event))">
-    <ion-infinite-scroll-content></ion-infinite-scroll-content>
-  </ion-infinite-scroll>
+  <div *ngIf="filteredEverythingOut" class="ion-text-center ion-padding empty">
+    <p>No {{ filter === 'Claim' ? 'claim' : 'steal' }} challenges yet.</p>
+    <ion-button fill="outline" routerLink="/challenges/new">Write one</ion-button>
+  </div>
+
 
   <!-- Further details are deliberately not shown in the list; this is where they surface. -->
   <ion-modal [isOpen]="selected !== null" (didDismiss)="closeDetails()">
