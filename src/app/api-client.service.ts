@@ -30,9 +30,9 @@ export class ApiClient {
     );
   }
 
-  async delete<T>(path: string): Promise<T> {
+  async delete<T>(path: string, body?: unknown): Promise<T> {
     return firstValueFrom(
-      this.http.delete<T>(`${environment.apiUrl}${path}`, { headers: await this.headers() }),
+      this.http.delete<T>(`${environment.apiUrl}${path}`, { headers: await this.headers(), body }),
     );
   }
 

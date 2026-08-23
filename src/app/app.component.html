@@ -26,6 +26,21 @@
           <ion-label>Rules</ion-label>
         </ion-item>
       </ion-list>
+
+      <ion-list *ngIf="canOfferPush">
+        <ion-item>
+          <ion-toggle
+            [checked]="pushState === 'on'"
+            [disabled]="pushBlocked"
+            (ionChange)="togglePush($any($event).detail.checked)"
+          >
+            <ion-label>
+              Notifications
+              <p *ngIf="pushBlocked">Blocked in your browser settings</p>
+            </ion-label>
+          </ion-toggle>
+        </ion-item>
+      </ion-list>
     </ion-content>
 
     <!-- Pinned to the bottom of the drawer rather than sitting in the navigation list, since

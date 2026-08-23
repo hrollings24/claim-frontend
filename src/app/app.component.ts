@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AlertController, MenuController, ToastController } from '@ionic/angular';
 import { AuthService } from './auth.service';
 import { GameService, joinFailureMessage } from './game.service';
+import { PushService, PushState } from './push.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +15,8 @@ export class AppComponent {
   user$ = this.authService.user$;
   busy = false;
 
+  pushState: PushState = 'unsupported';
+
   constructor(
     private authService: AuthService,
     private gameService: GameService,
@@ -21,7 +24,43 @@ export class AppComponent {
     private menu: MenuController,
     private alerts: AlertController,
     private toasts: ToastController,
-  ) {}
+    private push: PushService,
+  ) {
+    void this.refreshPushState();
+  }
+
+  get canOfferPush(): boolean {
+    return this.pushState !== 'unsupported' && this.pushState !== 'unconfigured';
+  }
+
+  get pushBlocked(): boolean {
+    return this.pushState === 'blocked';
+  }
+
+  async togglePush(enabled: boolean): Promise<void> {
+    // Ignore the change the toggle emits when it is first bound to the current state.
+    if (enabled === (this.pushState === 'on')) {
+      return;
+    }
+
+    try {
+      this.pushState = enabled ? await this.push.enable() : await this.push.disable();
+      if (enabled && this.pushState === 'blocked') {
+        await this.notify('Notifications are blocked in your browser settings.');
+      }
+    } catch {
+      this.pushState = 'off';
+      await this.notify('Could not change notifications.');
+    }
+  }
+
+  private async refreshPushState(): Promise<void> {
+    try {
+      this.pushState = await this.push.state();
+    } catch {
+      this.pushState = 'unsupported';
+    }
+  }
 
   async openChallenges(): Promise<void> {
     await this.menu.close();
