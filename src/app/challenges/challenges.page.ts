@@ -1,6 +1,6 @@
 import { Component, NgZone } from '@angular/core';
 import { Router } from '@angular/router';
-import { AlertController, RefresherCustomEvent } from '@ionic/angular';
+import { AlertController, IonItemSliding, RefresherCustomEvent } from '@ionic/angular';
 import { problemMessage } from '../api-client.service';
 import { Challenge, ChallengeService, ChallengeType } from '../challenge.service';
 
@@ -58,13 +58,17 @@ export class ChallengesPage {
     }
   }
 
-  async edit(challenge: Challenge): Promise<void> {
+  async edit(challenge: Challenge, slider?: IonItemSliding): Promise<void> {
+    // Left open, the row stays swiped when the page is returned to.
+    await slider?.close();
     this.closeDetails();
     await this.router.navigateByUrl(`/challenges/${challenge.id}/edit`);
   }
 
   /** Removing a challenge takes it out of the deck for everyone, so it asks first. */
-  async confirmDelete(challenge: Challenge): Promise<void> {
+  async confirmDelete(challenge: Challenge, slider?: IonItemSliding): Promise<void> {
+    await slider?.close();
+
     const alert = await this.alerts.create({
       header: 'Delete challenge',
       message: `"${challenge.title}" will be removed from the deck for everyone.`,
