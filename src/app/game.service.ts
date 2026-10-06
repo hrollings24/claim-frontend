@@ -101,6 +101,11 @@ export class GameService {
     return this.api.get<Game>(`/api/games/${encodeURIComponent(code)}`);
   }
 
+  /** Every game the caller still has a seat in, so the join page can offer a way back. */
+  mine(): Promise<Game[]> {
+    return this.api.get<Game[]>('/api/games/mine');
+  }
+
   join(code: string): Promise<Game> {
     return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/join`, this.membership());
   }

@@ -14,6 +14,11 @@ const routes: Routes = [
     loadChildren: () => import('./lobby/lobby.module').then( m => m.LobbyPageModule)
   },
   {
+    path: 'join',
+    canActivate: [authGuard],
+    loadChildren: () => import('./join-game/join-game.module').then( m => m.JoinGamePageModule)
+  },
+  {
     path: 'rules',
     loadChildren: () => import('./rules/rules.module').then( m => m.RulesPageModule)
   },
