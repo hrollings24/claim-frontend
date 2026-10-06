@@ -14,6 +14,7 @@ export class RulesPage {
   readonly activeBoroughs = 6;
   readonly handSize = 5;
   readonly hotBonus = 1;
+  /** The default — the host can set a different rotation time per game in the lobby. */
   readonly hotRotation = '90 minutes';
   readonly counterWindow = '15 minutes';
   readonly boroughCount = 32;

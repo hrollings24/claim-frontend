@@ -71,6 +71,7 @@ export interface Game {
   youAreHost: boolean;
   yourTeamId: string | null;
   durationMinutes: number;
+  hotRotationMinutes: number;
   players: GamePlayer[];
   teams: GameTeam[];
   board: GameBoard | null;
@@ -142,6 +143,12 @@ export class GameService {
   setDuration(code: string, durationMinutes: number): Promise<Game> {
     return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/duration`, {
       durationMinutes,
+    });
+  }
+
+  setHotRotation(code: string, hotRotationMinutes: number): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/hot-rotation`, {
+      hotRotationMinutes,
     });
   }
 

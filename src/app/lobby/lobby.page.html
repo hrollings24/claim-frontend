@@ -138,6 +138,36 @@
       </ng-template>
     </ion-list>
 
+    <ion-list [inset]="true" *ngIf="!currentGame.board">
+      <ion-list-header>
+        <ion-label>Hot borough rotation</ion-label>
+      </ion-list-header>
+
+      <!-- Also a game setting, so it follows the same rule as the length: host only. -->
+      <ng-container *ngIf="currentGame.youAreHost && !currentGame.board; else hotRotationReadOnly">
+        <ion-item>
+          <ion-select
+            label="Moves every"
+            labelPlacement="stacked"
+            interface="popover"
+            [(ngModel)]="hotRotationMinutes"
+            [disabled]="busy"
+            (ionChange)="saveHotRotation()"
+          >
+            <ion-select-option *ngFor="let minutes of hotRotationOptions" [value]="minutes">
+              {{ formatDuration(minutes) }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+      </ng-container>
+
+      <ng-template #hotRotationReadOnly>
+        <ion-item>
+          <ion-label>{{ formatDuration(currentGame.hotRotationMinutes) }}</ion-label>
+        </ion-item>
+      </ng-template>
+    </ion-list>
+
     <ng-container *ngIf="currentGame.status !== 'Lobby' && board as currentBoard">
       <ion-list [inset]="true">
         <ion-list-header>

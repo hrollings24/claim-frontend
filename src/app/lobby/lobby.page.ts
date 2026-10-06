@@ -31,6 +31,11 @@ export class LobbyPage {
   readonly hourOptions = Array.from({ length: 24 }, (_, hour) => hour);
   readonly minuteOptions = Array.from({ length: 12 }, (_, index) => index * 5);
 
+  /** How long the hot borough stands before moving on its own. */
+  hotRotationMinutes = 90;
+
+  readonly hotRotationOptions = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180];
+
   code = '';
   private pollHandle: ReturnType<typeof setInterval> | null = null;
   private refreshing = false;
@@ -40,6 +45,9 @@ export class LobbyPage {
    * is nobody else who could move them underneath the host mid-edit.
    */
   private durationLoaded = false;
+
+  /** Same reasoning as {@link durationLoaded}, for the hot-rotation field. */
+  private hotRotationLoaded = false;
 
   constructor(
     private route: ActivatedRoute,
@@ -52,6 +60,7 @@ export class LobbyPage {
     this.code = this.route.snapshot.paramMap.get('code') ?? '';
     this.error = null;
     this.durationLoaded = false;
+    this.hotRotationLoaded = false;
     void this.refresh();
     this.pollHandle = setInterval(() => void this.refresh(), POLL_INTERVAL_MS);
   }
@@ -216,6 +225,10 @@ export class LobbyPage {
     return this.act(() => this.gameService.setDuration(this.code, totalMinutes));
   }
 
+  saveHotRotation(): Promise<void> {
+    return this.act(() => this.gameService.setHotRotation(this.code, this.hotRotationMinutes));
+  }
+
   start(): Promise<void> {
     return this.act(() => this.gameService.start(this.code));
   }
@@ -268,6 +281,11 @@ export class LobbyPage {
       this.durationHours = Math.floor(game.durationMinutes / 60);
       this.durationMinutesPart = game.durationMinutes % 60;
       this.durationLoaded = true;
+    }
+
+    if (!this.hotRotationLoaded) {
+      this.hotRotationMinutes = game.hotRotationMinutes;
+      this.hotRotationLoaded = true;
     }
   }
 
