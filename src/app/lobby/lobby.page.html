@@ -211,6 +211,7 @@
             <ion-label class="ion-text-wrap">
               {{ card.title }}
               <p>{{ card.summary }}</p>
+              <p *ngIf="card.expiresAt" class="countdown">{{ stealCountdown(card) }}</p>
             </ion-label>
             <ion-badge slot="end" [color]="card.type === 'Steal' ? 'danger' : 'primary'">
               {{ card.type }}
@@ -226,30 +227,47 @@
 
         <ion-modal [isOpen]="detailsCard !== null" (didDismiss)="closeCardDetails()">
           <ng-template>
-            <ion-header>
-              <ion-toolbar>
-                <ion-title>{{ detailsCard?.title }}</ion-title>
-                <ion-buttons slot="end">
-                  <ion-button (click)="closeCardDetails()">Close</ion-button>
-                </ion-buttons>
-              </ion-toolbar>
-            </ion-header>
+            <ng-container *ngIf="detailsCard as card">
+              <ion-header>
+                <ion-toolbar>
+                  <ion-title>{{ card.title }}</ion-title>
+                  <ion-buttons slot="end">
+                    <ion-button (click)="closeCardDetails()">Close</ion-button>
+                  </ion-buttons>
+                </ion-toolbar>
+              </ion-header>
 
-            <ion-content class="ion-padding">
-              <ion-badge [color]="detailsCard?.type === 'Steal' ? 'danger' : 'primary'">
-                {{ detailsCard?.type }}
-              </ion-badge>
-              <p>{{ detailsCard?.summary }}</p>
-              <p>{{ detailsCard?.furtherDetails }}</p>
-            </ion-content>
+              <ion-content class="ion-padding">
+                <ion-badge [color]="card.type === 'Steal' ? 'danger' : 'primary'">
+                  {{ card.type }}
+                </ion-badge>
+                <p>{{ card.summary }}</p>
+                <p>{{ card.furtherDetails }}</p>
+              </ion-content>
 
-            <ion-footer>
-              <ion-toolbar>
-                <ion-button expand="block" (click)="playFromDetails()">
-                  {{ selectedCard?.id === detailsCard?.id ? 'Stop playing this' : 'Play this challenge' }}
-                </ion-button>
-              </ion-toolbar>
-            </ion-footer>
+              <ion-footer>
+                <ion-toolbar>
+                  <div class="details-footer">
+                    <ng-container *ngIf="card.type === 'Steal' && card.expiresAt; else pickTarget">
+                      <p class="ion-text-center countdown">{{ stealCountdown(card) }}</p>
+                      <ion-button expand="block" color="danger" [disabled]="busy" (click)="resolveFromDetails(false)">
+                        Failed
+                      </ion-button>
+                      <ion-button expand="block" [disabled]="busy" (click)="resolveFromDetails(true)">
+                        Done it
+                      </ion-button>
+                    </ng-container>
+                    <ng-template #pickTarget>
+                      <ion-button expand="block" [disabled]="busy" (click)="playFromDetails()">
+                        {{ selectedCard?.id === card.id
+                           ? 'Stop playing this'
+                           : (card.type === 'Steal' ? 'Pick a target to activate' : 'Play this challenge') }}
+                      </ion-button>
+                    </ng-template>
+                  </div>
+                </ion-toolbar>
+              </ion-footer>
+            </ng-container>
           </ng-template>
         </ion-modal>
 
@@ -285,7 +303,7 @@
             *ngFor="let territory of currentBoard.territories"
             [button]="canPlayOnTerritory(territory)"
             [disabled]="busy"
-            (click)="canPlayOnTerritory(territory) ? playAt(territory.id, territory.name) : null"
+            (click)="canPlayOnTerritory(territory) ? onTerritoryTap(territory) : null"
           >
             <ion-label class="ion-text-wrap">
               {{ territory.name }}

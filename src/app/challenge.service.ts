@@ -10,6 +10,8 @@ export interface Challenge {
   title: string;
   summary: string;
   furtherDetails: string;
+  /** Steal only. Null means the default — the challenge predates this setting. */
+  stealMinutes: number | null;
   createdByName: string;
   createdAt: string;
   /** Only the author may change or remove a challenge. */
@@ -21,6 +23,7 @@ export interface NewChallenge {
   title: string;
   summary: string;
   furtherDetails: string;
+  stealMinutes: number | null;
 }
 
 @Injectable({ providedIn: 'root' })

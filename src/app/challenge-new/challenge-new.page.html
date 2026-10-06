@@ -63,7 +63,23 @@
         [(ngModel)]="furtherDetails"
       ></ion-textarea>
     </ion-item>
+
+    <ion-item *ngIf="type === 'Steal'">
+      <ion-input
+        type="number"
+        label="Steal timer (minutes)"
+        labelPlacement="stacked"
+        placeholder="5"
+        min="1"
+        max="120"
+        [(ngModel)]="stealMinutes"
+      ></ion-input>
+    </ion-item>
   </ion-list>
+
+  <p class="type-hint" *ngIf="type === 'Steal'">
+    Hidden in a hand until a team picks a target — the countdown above starts the moment they do.
+  </p>
 
   <p *ngIf="error" class="ion-text-center error">{{ error }}</p>
 

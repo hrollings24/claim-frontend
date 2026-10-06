@@ -38,6 +38,13 @@ export interface HandCard {
   title: string;
   summary: string;
   furtherDetails: string;
+  /** Steal only. */
+  stealMinutes: number | null;
+  /**
+   * Steal only, and only once activated — null means the challenge is still hidden and the
+   * title/summary/furtherDetails above are placeholder text, not the real thing.
+   */
+  expiresAt: string | null;
 }
 
 export interface TeamScore {
@@ -141,6 +148,22 @@ export class GameService {
     return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/play`, {
       cardId,
       boroughId,
+      succeeded,
+    });
+  }
+
+  /** Commits a steal card to a target — reveals the challenge and starts its countdown. */
+  activateSteal(code: string, cardId: string, boroughId: string): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/activate-steal`, {
+      cardId,
+      boroughId,
+    });
+  }
+
+  /** Reports whether an already-activated steal came off. */
+  resolveSteal(code: string, cardId: string, succeeded: boolean): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/resolve-steal`, {
+      cardId,
       succeeded,
     });
   }

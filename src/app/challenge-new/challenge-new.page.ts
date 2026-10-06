@@ -17,6 +17,9 @@ export class ChallengeNewPage {
   summary = '';
   furtherDetails = '';
 
+  /** Steal only — how long the countdown runs once a team activates this steal. */
+  stealMinutes = 5;
+
   saving = false;
   loading = false;
   error: string | null = null;
@@ -40,6 +43,7 @@ export class ChallengeNewPage {
     this.title = '';
     this.summary = '';
     this.furtherDetails = '';
+    this.stealMinutes = 5;
     this.error = null;
     this.editingId = this.route.snapshot.paramMap.get('id');
 
@@ -56,6 +60,7 @@ export class ChallengeNewPage {
       this.title = challenge.title;
       this.summary = challenge.summary;
       this.furtherDetails = challenge.furtherDetails;
+      this.stealMinutes = challenge.stealMinutes ?? 5;
     } catch (error: unknown) {
       this.error = problemMessage(error, 'Could not load that challenge.');
     } finally {
@@ -85,6 +90,7 @@ export class ChallengeNewPage {
         title: this.title.trim(),
         summary: this.summary.trim(),
         furtherDetails: this.furtherDetails.trim(),
+        stealMinutes: this.type === 'Steal' ? this.stealMinutes : null,
       };
 
       await (this.editingId === null

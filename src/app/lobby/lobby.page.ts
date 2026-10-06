@@ -201,6 +201,38 @@ export class LobbyPage {
     });
   }
 
+  /** Enters the outcome of a steal already activated against its target. */
+  async resolveFromDetails(succeeded: boolean): Promise<void> {
+    const card = this.detailsCard;
+    if (!card) {
+      return;
+    }
+
+    this.zone.run(() => {
+      this.detailsCard = null;
+    });
+
+    await this.act(() => this.gameService.resolveSteal(this.code, card.id, succeeded));
+  }
+
+  /** Minutes:seconds left on an activated steal, or that it's run out — still resolvable either way. */
+  stealCountdown(card: HandCard): string {
+    if (!card.expiresAt) {
+      return '';
+    }
+
+    const remainingMs = new Date(card.expiresAt).getTime() - Date.now();
+    if (remainingMs <= 0) {
+      return "Time's up";
+    }
+
+    const totalSeconds = Math.ceil(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${minutes}:${seconds.toString().padStart(2, '0')} left`;
+  }
+
   timeRemaining(): string {
     const endsAt = this.board?.endsAt;
     if (!endsAt) {
@@ -210,6 +242,32 @@ export class LobbyPage {
     const minutes = Math.max(0, Math.round((new Date(endsAt).getTime() - Date.now()) / 60000));
 
     return this.formatDuration(minutes) + ' left';
+  }
+
+  /**
+   * A held territory is a target for either an unactivated steal (picking one activates it) or
+   * a claim card hitting back during a counter window (resolved immediately, same as any claim).
+   */
+  onTerritoryTap(territory: Territory): void {
+    if (!this.selectedCard) {
+      return;
+    }
+
+    if (this.selectedCard.type === 'Steal') {
+      void this.activateAt(territory.id);
+    } else {
+      void this.playAt(territory.id, territory.name);
+    }
+  }
+
+  private async activateAt(boroughId: string): Promise<void> {
+    const card = this.selectedCard;
+    if (!card) {
+      return;
+    }
+
+    this.selectedCard = null;
+    await this.act(() => this.gameService.activateSteal(this.code, card.id, boroughId));
   }
 
   /** Asks how the challenge went, then plays the card either way — a spent card is spent. */
