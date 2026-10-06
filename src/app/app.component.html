@@ -10,6 +10,10 @@
 
     <ion-content>
       <ion-list>
+        <ion-item button *ngIf="activeGameCode" (click)="backToGame()">
+          <ion-label>Back to game {{ activeGameCode }}</ion-label>
+        </ion-item>
+
         <ion-item button [disabled]="busy" (click)="createGame()">
           <ion-label>Create game</ion-label>
         </ion-item>

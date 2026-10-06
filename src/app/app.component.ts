@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { AlertController, MenuController, ToastController } from '@ionic/angular';
 import { AuthService } from './auth.service';
 import { GameService, joinFailureMessage } from './game.service';
+import { LastGameService } from './last-game.service';
 import { PushService, PushState } from './push.service';
 
 @Component({
@@ -25,8 +26,24 @@ export class AppComponent {
     private alerts: AlertController,
     private toasts: ToastController,
     private push: PushService,
+    private lastGame: LastGameService,
   ) {
     void this.refreshPushState();
+  }
+
+  /** Lets a player who navigated away from the lobby — to Challenges, say — find their way back. */
+  get activeGameCode(): string | null {
+    return this.lastGame.code;
+  }
+
+  async backToGame(): Promise<void> {
+    const code = this.activeGameCode;
+    if (!code) {
+      return;
+    }
+
+    await this.menu.close();
+    await this.router.navigateByUrl(`/lobby/${code}`);
   }
 
   get canOfferPush(): boolean {

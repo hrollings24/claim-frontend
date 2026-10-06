@@ -175,7 +175,7 @@
           <ion-note slot="end">{{ timeRemaining() }}</ion-note>
         </ion-list-header>
 
-        <ion-item *ngFor="let score of currentBoard.scores">
+        <ion-item button *ngFor="let score of currentBoard.scores" (click)="showTeamBoroughs(score)">
           <ion-label class="ion-text-wrap">
             {{ score.name }}
             <p>{{ score.territories }} boroughs, {{ score.bonusPoints }} bonus</p>
@@ -206,7 +206,7 @@
             *ngFor="let card of currentBoard.yourHand"
             [class.picked]="selectedCard?.id === card.id"
             [disabled]="busy"
-            (click)="selectCard(card)"
+            (click)="viewCardDetails(card)"
           >
             <ion-label class="ion-text-wrap">
               {{ card.title }}
@@ -223,6 +223,35 @@
             </ion-label>
           </ion-item>
         </ion-list>
+
+        <ion-modal [isOpen]="detailsCard !== null" (didDismiss)="closeCardDetails()">
+          <ng-template>
+            <ion-header>
+              <ion-toolbar>
+                <ion-title>{{ detailsCard?.title }}</ion-title>
+                <ion-buttons slot="end">
+                  <ion-button (click)="closeCardDetails()">Close</ion-button>
+                </ion-buttons>
+              </ion-toolbar>
+            </ion-header>
+
+            <ion-content class="ion-padding">
+              <ion-badge [color]="detailsCard?.type === 'Steal' ? 'danger' : 'primary'">
+                {{ detailsCard?.type }}
+              </ion-badge>
+              <p>{{ detailsCard?.summary }}</p>
+              <p>{{ detailsCard?.furtherDetails }}</p>
+            </ion-content>
+
+            <ion-footer>
+              <ion-toolbar>
+                <ion-button expand="block" (click)="playFromDetails()">
+                  {{ selectedCard?.id === detailsCard?.id ? 'Stop playing this' : 'Play this challenge' }}
+                </ion-button>
+              </ion-toolbar>
+            </ion-footer>
+          </ng-template>
+        </ion-modal>
 
         <p class="hint ion-text-center" *ngIf="selectedCard">
           Pick where to play "{{ selectedCard.title }}".

@@ -1,7 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, NgZone } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
-import { ActiveBorough, Game, GamePlayer, GameService, HandCard, Territory } from '../game.service';
+import {
+  ActiveBorough,
+  Game,
+  GamePlayer,
+  GameService,
+  HandCard,
+  Territory,
+  TeamScore,
+} from '../game.service';
+import { LastGameService } from '../last-game.service';
 
 /**
  * The roster changes rarely (someone joins, someone leaves), so it is polled rather than
@@ -23,6 +32,9 @@ export class LobbyPage {
 
   /** The card the player has picked up, waiting for them to choose where to play it. */
   selectedCard: HandCard | null = null;
+
+  /** The hand card whose full details are open. Null means the modal is closed. */
+  detailsCard: HandCard | null = null;
 
   /** Game length as the two fields the lobby shows, kept whole in minutes on the server. */
   durationHours = 1;
@@ -54,6 +66,8 @@ export class LobbyPage {
     private router: Router,
     private gameService: GameService,
     private alerts: AlertController,
+    private zone: NgZone,
+    private lastGame: LastGameService,
   ) {}
 
   ionViewWillEnter(): void {
@@ -112,6 +126,7 @@ export class LobbyPage {
         this.stopPolling();
         this.game = null;
         this.error = 'This game no longer exists.';
+        this.lastGame.clear();
       }
     } finally {
       this.refreshing = false;
@@ -151,8 +166,28 @@ export class LobbyPage {
     return this.board?.yourCounterWindow?.againstTeamId === territory.teamId;
   }
 
-  selectCard(card: HandCard): void {
-    this.selectedCard = this.selectedCard?.id === card.id ? null : card;
+  viewCardDetails(card: HandCard): void {
+    this.detailsCard = card;
+  }
+
+  /**
+   * Ionic moves the modal out of this page and into ion-app when it presents, so its own
+   * buttons and dismiss events fire outside Angular's zone — clearing state has to re-enter it,
+   * or the [isOpen] binding never updates and the modal stays on screen.
+   */
+  closeCardDetails(): void {
+    this.zone.run(() => {
+      this.detailsCard = null;
+    });
+  }
+
+  /** Picks up the card whose details are open, ready to be played at a borough. */
+  playFromDetails(): void {
+    const card = this.detailsCard;
+    this.zone.run(() => {
+      this.selectedCard = this.selectedCard?.id === card?.id ? null : card;
+      this.detailsCard = null;
+    });
   }
 
   timeRemaining(): string {
@@ -176,7 +211,6 @@ export class LobbyPage {
     const alert = await this.alerts.create({
       header: card.title,
       subHeader: boroughName,
-      message: card.furtherDetails,
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         { text: 'Failed', handler: () => void this.submitPlay(card, boroughId, false) },
@@ -190,6 +224,21 @@ export class LobbyPage {
   private async submitPlay(card: HandCard, boroughId: string, succeeded: boolean): Promise<void> {
     this.selectedCard = null;
     await this.act(() => this.gameService.playCard(this.code, card.id, boroughId, succeeded));
+  }
+
+  /** Shows which boroughs a team holds — tapped from their row in the scoreboard. */
+  async showTeamBoroughs(score: TeamScore): Promise<void> {
+    const held = (this.board?.territories ?? []).filter(t => t.teamId === score.teamId);
+
+    const alert = await this.alerts.create({
+      header: score.name,
+      message: held.length > 0
+        ? held.map(t => t.name + (t.isLocked ? ' (locked)' : '')).join('<br>')
+        : 'No boroughs claimed yet.',
+      buttons: ['Close'],
+    });
+
+    await alert.present();
   }
 
   async createTeam(): Promise<void> {
@@ -242,6 +291,7 @@ export class LobbyPage {
       // Leaving is best effort — either way this player is done with the lobby, and an
       // abandoned membership ages out with the game's TTL.
     } finally {
+      this.lastGame.clear();
       this.busy = false;
       await this.goHome();
     }
@@ -276,6 +326,7 @@ export class LobbyPage {
 
   private apply(game: Game): void {
     this.game = game;
+    this.lastGame.set(game.code);
 
     if (!this.durationLoaded) {
       this.durationHours = Math.floor(game.durationMinutes / 60);
