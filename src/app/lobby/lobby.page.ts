@@ -137,6 +137,17 @@ export class LobbyPage {
     return this.game?.board ?? null;
   }
 
+  get pageTitle(): string {
+    switch (this.game?.status) {
+      case 'InProgress':
+        return 'In play';
+      case 'Finished':
+        return 'Game over';
+      default:
+        return 'Waiting room';
+    }
+  }
+
   /** Territories held by anyone other than the player's own team — the stealable ones. */
   get opposingTerritories(): Territory[] {
     return (this.board?.territories ?? []).filter(t => t.teamId !== this.game?.yourTeamId);
