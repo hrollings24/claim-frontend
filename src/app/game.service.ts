@@ -29,6 +29,8 @@ export interface Territory {
   name: string;
   teamId: string;
   teamName: string;
+  /** Locked by Fortify: it can't be stolen for the rest of the game. */
+  isFortified: boolean;
 }
 
 /** A claim challenge. The hand holds nothing else. */
@@ -42,10 +44,10 @@ export interface HandCard {
 }
 
 /**
- * Steal, Veto and Reverse (Curse Reverse) are built in. Curse (cast on another team) and Boost
- * (played on yourself) are written by players.
+ * Steal, Reverse (Curse Reverse), Fortify and Swap are built in. Curse (cast on another team) and
+ * Boost (played on yourself) are written by players.
  */
-export type PowerKind = 'Steal' | 'Curse' | 'Boost' | 'Veto' | 'Reverse';
+export type PowerKind = 'Steal' | 'Curse' | 'Boost' | 'Reverse' | 'Fortify' | 'Swap';
 
 /** One colour per kind, used everywhere a power card shows its kind. */
 export function powerKindColor(kind: PowerKind): string {
@@ -54,15 +56,16 @@ export function powerKindColor(kind: PowerKind): string {
       return 'danger';
     case 'Boost':
       return 'success';
-    case 'Veto':
     case 'Reverse':
+    case 'Fortify':
+    case 'Swap':
       return 'tertiary';
     default:
       return 'warning';
   }
 }
 
-export type StealOutcome = 'Succeeded' | 'Failed' | 'TimedOut' | 'Vetoed';
+export type StealOutcome = 'Succeeded' | 'Failed' | 'TimedOut';
 
 /** The challenge a played Steal revealed, and its clock. */
 export interface StealAttempt {
@@ -102,11 +105,19 @@ export interface Curse {
   startedAt: string;
   /** Null for one that lasts until the cursed team clears it. */
   endsAt: string | null;
-  /** Sent back by Curse Reverse — can be vetoed, not reversed again. */
+  /** Sent back by Curse Reverse — it can't be reversed again. */
   isReversal: boolean;
 }
 
-/** A steal running against one of your boroughs — what a Veto can stop. */
+/** A Swap you've played and not finished: the other team's power cards, revealed to pick from. */
+export interface PendingSwap {
+  cardId: string;
+  teamId: string;
+  teamName: string;
+  theirCards: PowerCard[];
+}
+
+/** A steal running against one of your boroughs, so you know it's coming. */
 export interface IncomingSteal {
   id: string;
   boroughId: string;
@@ -143,6 +154,7 @@ export interface GameBoard {
   yourPowerOffers: PowerOffer[];
   activeCurses: Curse[];
   incomingSteals: IncomingSteal[];
+  yourSwaps: PendingSwap[];
   /** Unplayed power cards a team may hold at once. */
   maxPowerCards: number;
   /** Left to draw before the discard pile is shuffled back in. */
@@ -261,7 +273,7 @@ export class GameService {
     );
   }
 
-  /** Uses a Veto or Curse Reverse on a curse aimed at your team. */
+  /** Uses a Curse Reverse on a curse aimed at your team. */
   respondToCurse(code: string, curseId: string, cardId: string): Promise<Game> {
     return this.api.post<Game>(
       `/api/games/${encodeURIComponent(code)}/curses/${encodeURIComponent(curseId)}/respond`,
@@ -276,11 +288,14 @@ export class GameService {
     );
   }
 
-  /** Uses a Veto on a steal running against one of your boroughs. */
-  vetoSteal(code: string, stealId: string, cardId: string): Promise<Game> {
+  /**
+   * Finishes a played Swap: take one of their cards, give one of yours. Either is left out only
+   * when that side has nothing left.
+   */
+  completeSwap(code: string, swapCardId: string, takeCardId: string | null, giveCardId: string | null): Promise<Game> {
     return this.api.post<Game>(
-      `/api/games/${encodeURIComponent(code)}/steals/${encodeURIComponent(stealId)}/veto`,
-      { cardId },
+      `/api/games/${encodeURIComponent(code)}/powers/${encodeURIComponent(swapCardId)}/swap`,
+      { takeCardId, giveCardId },
     );
   }
 

@@ -122,22 +122,22 @@
 
     <ion-accordion value="answers">
       <ion-item slot="header">
-        <ion-label>Veto and Curse Reverse</ion-label>
+        <ion-label>Curse Reverse, Fortify and Swap</ion-label>
       </ion-item>
       <div class="body ion-padding" slot="content">
         <p>
-          Hold on to these — you use them on something aimed at you, from the curse or steal
-          itself. Nothing happens automatically: a curse stays on you until you choose to answer
-          it, or it runs out.
+          A <span class="key">Curse Reverse</span> is kept for when you're cursed. Nothing happens
+          automatically — a curse stays on you until you choose to reverse it, or it runs out. Use
+          it from the curse itself and it starts again on the team that cast it, with its full
+          time. A reversed curse can't be reversed back.
         </p>
         <p>
-          A <span class="key">Veto</span> cancels a curse on you, or stops a steal on one of your
-          boroughs dead — nothing moves, and their Steal is spent.
+          <span class="key">Fortify</span> locks one of your boroughs for the rest of the game —
+          nobody can steal it. You can't fortify a borough while a steal on it is already running.
         </p>
         <p>
-          A <span class="key">Curse Reverse</span> sends a curse back to the team that cast it, and
-          it starts again on them with its full time. A reversed curse can't be reversed back — but
-          it can still be vetoed.
+          <span class="key">Swap</span> lets you pick another team and see their power cards. Take
+          the one you want, and give them one of yours.
         </p>
       </div>
     </ion-accordion>
@@ -149,7 +149,7 @@
       <div class="body ion-padding" slot="content">
         <p>
           <span class="key">Steal</span> is the most powerful power card. Play it at any borough
-          another team holds — nothing is ever locked — and a steal challenge is revealed, with a
+          another team holds — unless they fortified it — and a steal challenge is revealed, with a
           countdown, {{ stealTimer }} by default.
         </p>
         <p>
@@ -159,7 +159,8 @@
         </p>
         <p class="aside">
           There is no backing out once the challenge is revealed. Pick your target before you see
-          what you'll have to do. The team you're stealing from is told — and a Veto stops you.
+          what you'll have to do. The team you're stealing from is told it's coming. A fortified
+          borough can't be stolen at all.
         </p>
       </div>
     </ion-accordion>

@@ -9,6 +9,7 @@ import {
   GameService,
   HandCard,
   IncomingSteal,
+  PendingSwap,
   PowerCard,
   PowerKind,
   powerKindColor,
@@ -202,9 +203,9 @@ export class LobbyPage {
     return this.selectedCard !== null && !!borough;
   }
 
-  /** A Steal goes at any borough another team holds — nothing is ever locked. */
+  /** A Steal goes at any borough another team holds, unless they fortified it. */
   canPlayOnTerritory(territory: Territory): boolean {
-    return this.selectedSteal !== null && territory.teamId !== this.game?.yourTeamId;
+    return this.selectedSteal !== null && territory.teamId !== this.game?.yourTeamId && !territory.isFortified;
   }
 
   viewCardDetails(card: HandCard): void {
@@ -354,8 +355,13 @@ export class LobbyPage {
 
     this.closePowerDetails();
 
-    if (card.kind === 'Curse') {
-      await this.pickCurseTarget(card);
+    if (card.kind === 'Curse' || card.kind === 'Swap') {
+      await this.pickTeamFor(card);
+      return;
+    }
+
+    if (card.kind === 'Fortify') {
+      await this.pickBoroughToFortify(card);
       return;
     }
 
@@ -371,13 +377,19 @@ export class LobbyPage {
     await alert.present();
   }
 
-  /** A curse lands on one team, picked here; they're told by notification and see it in the app. */
-  private async pickCurseTarget(card: PowerCard): Promise<void> {
+  /**
+   * A curse lands on one team, picked here; they're told by notification and see it in the app.
+   * A Swap reveals the picked team's power cards, to take one and give one back.
+   */
+  private async pickTeamFor(card: PowerCard): Promise<void> {
     const others = (this.game?.teams ?? []).filter(team => team.id !== this.game?.yourTeamId);
+    const isSwap = card.kind === 'Swap';
 
     const alert = await this.alerts.create({
-      header: `Who gets ${card.title}?`,
-      subHeader: card.durationMinutes ? `For ${card.durationMinutes} minutes` : 'Until they mark it cleared',
+      header: isSwap ? 'Swap with which team?' : `Who gets ${card.title}?`,
+      subHeader: isSwap
+        ? "You'll see their power cards, then pick one to take and one to give."
+        : card.durationMinutes ? `For ${card.durationMinutes} minutes` : 'Until they mark it cleared',
       inputs: others.map((team, index) => ({
         type: 'radio' as const,
         label: team.name,
@@ -387,9 +399,46 @@ export class LobbyPage {
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {
-          text: 'Curse them',
+          text: isSwap ? 'See their cards' : 'Curse them',
           handler: (teamId: string) =>
             void this.act(() => this.gameService.playPower(this.code, card.id, { targetTeamId: teamId })),
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  /** Fortify locks one of your own boroughs — not one with a steal already running on it. */
+  private async pickBoroughToFortify(card: PowerCard): Promise<void> {
+    const underAttack = new Set(this.incomingSteals.map(steal => steal.boroughId));
+    const eligible = this.ownTerritories.filter(t => !t.isFortified && !underAttack.has(t.id));
+
+    if (eligible.length === 0) {
+      const none = await this.alerts.create({
+        header: 'Nothing to fortify',
+        message: 'You need a borough that isn\'t already fortified and doesn\'t have a steal running on it.',
+        buttons: ['OK'],
+      });
+      await none.present();
+      return;
+    }
+
+    const alert = await this.alerts.create({
+      header: 'Fortify which borough?',
+      subHeader: 'Nobody can steal it for the rest of the game.',
+      inputs: eligible.map((territory, index) => ({
+        type: 'radio' as const,
+        label: territory.name,
+        value: territory.id,
+        checked: index === 0,
+      })),
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Fortify it',
+          handler: (boroughId: string) =>
+            void this.act(() => this.gameService.playPower(this.code, card.id, { boroughId })),
         },
       ],
     });
@@ -469,7 +518,7 @@ export class LobbyPage {
     return `${minutes}:${seconds.toString().padStart(2, '0')} left`;
   }
 
-  // ---- Curses and vetoes ----
+  // ---- Curses and the cards that answer them ----
 
   get cursesOnYou(): Curse[] {
     return (this.board?.activeCurses ?? []).filter(curse => curse.onYou);
@@ -483,35 +532,29 @@ export class LobbyPage {
     return this.board?.incomingSteals ?? [];
   }
 
-  /** The first unplayed card of a kind — which copy of a Veto gets used makes no difference. */
-  private held(kind: 'Veto' | 'Reverse'): PowerCard | null {
-    return this.unplayedPowers.find(card => card.kind === kind) ?? null;
-  }
-
-  get canVeto(): boolean {
-    return this.held('Veto') !== null;
+  /** The first unplayed Curse Reverse — which copy gets used makes no difference. */
+  private get heldReverse(): PowerCard | null {
+    return this.unplayedPowers.find(card => card.kind === 'Reverse') ?? null;
   }
 
   canReverse(curse: Curse): boolean {
-    return !curse.isReversal && this.held('Reverse') !== null;
+    return !curse.isReversal && this.heldReverse !== null;
   }
 
-  /** Never automatic: the team picks a Veto or Reverse and uses it on this curse. */
-  async answerCurse(curse: Curse, kind: 'Veto' | 'Reverse'): Promise<void> {
-    const card = this.held(kind);
+  /** Never automatic: the team chooses to use a Curse Reverse on this curse. */
+  async reverseCurse(curse: Curse): Promise<void> {
+    const card = this.heldReverse;
     if (!card) {
       return;
     }
 
     const alert = await this.alerts.create({
-      header: kind === 'Veto' ? `Veto ${curse.title}?` : `Reverse ${curse.title}?`,
-      message: kind === 'Veto'
-        ? 'It is lifted straight away, and your Veto is spent.'
-        : `It starts again on ${curse.fromTeamName}, with its full time. It can't be sent back to you.`,
+      header: `Reverse ${curse.title}?`,
+      message: `It starts again on ${curse.fromTeamName}, with its full time. It can't be sent back to you.`,
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {
-          text: kind === 'Veto' ? 'Veto it' : 'Reverse it',
+          text: 'Reverse it',
           handler: () => void this.act(() => this.gameService.respondToCurse(this.code, curse.id, card.id)),
         },
       ],
@@ -524,22 +567,31 @@ export class LobbyPage {
     return this.act(() => this.gameService.clearCurse(this.code, curse.id));
   }
 
-  async vetoSteal(steal: IncomingSteal): Promise<void> {
-    const card = this.held('Veto');
-    if (!card) {
-      return;
-    }
+  // ---- Swaps ----
 
-    const alert = await this.alerts.create({
-      header: `Veto the steal on ${steal.boroughName}?`,
-      message: `${steal.fromTeamName}'s steal ends now and ${steal.boroughName} stays yours. Your Veto is spent.`,
-      buttons: [
-        { text: 'Cancel', role: 'cancel' },
-        { text: 'Veto it', handler: () => void this.act(() => this.gameService.vetoSteal(this.code, steal.id, card.id)) },
-      ],
-    });
+  get pendingSwaps(): PendingSwap[] {
+    return this.board?.yourSwaps ?? [];
+  }
 
-    await alert.present();
+  /** Which of their cards to take and which of yours to give, per open swap. */
+  swapTake: Record<string, string> = {};
+  swapGive: Record<string, string> = {};
+
+  /** Each side must be picked whenever that side has anything to pick from. */
+  canCompleteSwap(swap: PendingSwap): boolean {
+    const needsTake = swap.theirCards.length > 0;
+    const needsGive = this.unplayedPowers.length > 0;
+
+    return (!needsTake || !!this.swapTake[swap.cardId]) && (!needsGive || !!this.swapGive[swap.cardId]);
+  }
+
+  completeSwap(swap: PendingSwap): Promise<void> {
+    const take = this.swapTake[swap.cardId] ?? null;
+    const give = this.swapGive[swap.cardId] ?? null;
+    delete this.swapTake[swap.cardId];
+    delete this.swapGive[swap.cardId];
+
+    return this.act(() => this.gameService.completeSwap(this.code, swap.cardId, take, give));
   }
 
   stealOutcomeLabel(outcome: StealOutcome | null): string {
@@ -550,8 +602,7 @@ export class LobbyPage {
         return 'Failed';
       case 'TimedOut':
         return 'Ran out of time';
-      case 'Vetoed':
-        return 'Vetoed';
+
       default:
         return 'In progress';
     }

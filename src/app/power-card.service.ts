@@ -9,7 +9,7 @@ export interface PowerCardDefinition {
   description: string;
   /** Curse only: how long it lasts. Null lasts until the cursed team clears it. */
   durationMinutes: number | null;
-  /** Steal, Veto and Curse Reverse have rules behind them, so nobody can edit or delete them. */
+  /** Steal, Curse Reverse, Fortify and Swap have rules behind them, so nobody can edit or delete them. */
   isBuiltIn: boolean;
 }
 

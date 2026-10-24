@@ -99,6 +99,18 @@
   border: 1px solid var(--ion-color-warning);
 }
 
+.swap-open {
+  border: 1px solid var(--ion-color-tertiary);
+
+  ion-item {
+    --background: transparent;
+  }
+
+  .alert-label {
+    color: var(--ion-color-tertiary);
+  }
+}
+
 .alert-label {
   font-size: 0.8rem;
   font-weight: 700;

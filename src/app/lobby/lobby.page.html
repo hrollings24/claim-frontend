@@ -273,16 +273,12 @@
           </div>
         </div>
 
-        <!-- Someone is coming for one of your boroughs. Only a Veto stops it. -->
+        <!-- Someone is coming for one of your boroughs. Nothing stops it now — but you know. -->
         <div *ngFor="let steal of incomingSteals" class="alert-card steal-incoming">
           <p class="alert-label">{{ steal.fromTeamName }} is stealing {{ steal.boroughName }}</p>
           <h2>{{ steal.title }}</h2>
           <p>{{ steal.summary }}</p>
           <p class="countdown">{{ countdownTo(steal.expiresAt) }}</p>
-          <ion-button *ngIf="canVeto" expand="block" color="tertiary" [disabled]="busy" (click)="vetoSteal(steal)">
-            Veto this steal
-          </ion-button>
-          <p *ngIf="!canVeto" class="muted small">You'd need a Veto to stop it.</p>
         </div>
 
         <!-- A curse is on you from the moment it's cast. Answering it is always your choice. -->
@@ -294,16 +290,54 @@
           <p>{{ curse.description }}</p>
           <p class="countdown">{{ curse.endsAt ? countdownTo(curse.endsAt) : 'Until you mark it cleared' }}</p>
           <div class="alert-actions">
-            <ion-button *ngIf="canVeto" color="tertiary" [disabled]="busy" (click)="answerCurse(curse, 'Veto')">
-              Veto
-            </ion-button>
-            <ion-button *ngIf="canReverse(curse)" color="tertiary" fill="outline" [disabled]="busy" (click)="answerCurse(curse, 'Reverse')">
+            <ion-button *ngIf="canReverse(curse)" color="tertiary" [disabled]="busy" (click)="reverseCurse(curse)">
               Reverse
             </ion-button>
             <ion-button *ngIf="!curse.endsAt" fill="outline" [disabled]="busy" (click)="clearCurse(curse)">
               Mark cleared
             </ion-button>
           </div>
+        </div>
+
+        <!-- A Swap has been committed: their cards are on show until one is taken. -->
+        <div *ngFor="let swap of pendingSwaps" class="alert-card swap-open">
+          <p class="alert-label">Swapping with {{ swap.teamName }}</p>
+
+          <ng-container *ngIf="swap.theirCards.length > 0; else nothingToTake">
+            <p class="small">Take one of theirs:</p>
+            <ion-radio-group [(ngModel)]="swapTake[swap.cardId]">
+              <ion-item *ngFor="let card of swap.theirCards" lines="none">
+                <ion-radio [value]="card.id" justify="space-between">
+                  <ion-label class="ion-text-wrap">
+                    {{ card.title }}
+                    <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
+                    <p>{{ card.description }}</p>
+                  </ion-label>
+                </ion-radio>
+              </ion-item>
+            </ion-radio-group>
+          </ng-container>
+          <ng-template #nothingToTake>
+            <p class="muted small">They've no cards left to take.</p>
+          </ng-template>
+
+          <ng-container *ngIf="unplayedPowers.length > 0; else nothingToGive">
+            <p class="small">Give them one of yours:</p>
+            <ion-radio-group [(ngModel)]="swapGive[swap.cardId]">
+              <ion-item *ngFor="let card of unplayedPowers" lines="none">
+                <ion-radio [value]="card.id" justify="space-between">
+                  <ion-label class="ion-text-wrap">{{ card.title }}</ion-label>
+                </ion-radio>
+              </ion-item>
+            </ion-radio-group>
+          </ng-container>
+          <ng-template #nothingToGive>
+            <p class="muted small">You've nothing to give, so you just take one.</p>
+          </ng-template>
+
+          <ion-button expand="block" color="tertiary" [disabled]="busy || !canCompleteSwap(swap)" (click)="completeSwap(swap)">
+            Swap
+          </ion-button>
         </div>
 
         <ion-list [inset]="true" *ngIf="cursesYouCast.length > 0">
@@ -488,9 +522,9 @@
                   Boosts run on trust: the app only records that it was played. Let the others know
                   in the group chat if it affects them.
                 </p>
-                <p *ngIf="card.kind === 'Veto' || card.kind === 'Reverse'" class="muted">
-                  Keep this for when you need it — it's used from a curse{{ card.kind === 'Veto' ? ' or steal' : '' }}
-                  aimed at you, which will show at the top of the screen.
+                <p *ngIf="card.kind === 'Reverse'" class="muted">
+                  Keep this for when you need it — it's used from a curse aimed at you, which will
+                  show at the top of the screen.
                 </p>
               </ion-content>
 
@@ -498,13 +532,15 @@
                 <ion-toolbar>
                   <div class="details-footer">
                     <ion-button
-                      *ngIf="card.kind !== 'Veto' && card.kind !== 'Reverse'"
+                      *ngIf="card.kind !== 'Reverse'"
                       expand="block"
                       [disabled]="busy"
                       (click)="playPowerFromDetails()"
                     >
                       {{ card.kind === 'Steal'
                          ? (selectedSteal?.id === card.id ? 'Stop picking a target' : 'Pick a borough to steal')
+                         : card.kind === 'Fortify' ? 'Pick a borough to fortify'
+                         : card.kind === 'Swap' ? 'Pick a team to swap with'
                          : (card.kind === 'Boost' ? 'Play this boost' : 'Play this curse') }}
                     </ion-button>
                     <ion-button expand="block" fill="clear" color="medium" [disabled]="busy" (click)="discardFromDetails()">
@@ -559,6 +595,7 @@
               {{ territory.name }}
               <p>{{ territory.teamName }}</p>
             </ion-label>
+            <ion-badge slot="end" color="tertiary" *ngIf="territory.isFortified">Fortified</ion-badge>
           </ion-item>
         </ion-list>
       </ng-container>
