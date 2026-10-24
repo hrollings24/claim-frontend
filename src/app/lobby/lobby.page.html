@@ -168,6 +168,44 @@
       </ng-template>
     </ion-list>
 
+    <ion-list [inset]="true" *ngIf="!currentGame.board">
+      <ion-list-header>
+        <ion-label>Power cards</ion-label>
+        <ion-button size="small" fill="clear" (click)="openPowerCards()">Manage</ion-button>
+      </ion-list-header>
+
+      <!-- Same rule as the other settings: the host picks, everyone else sees the choice. -->
+      <ion-item *ngIf="currentGame.youAreHost && powerConfigurations.length > 0">
+        <ion-select
+          label="Deck"
+          labelPlacement="stacked"
+          interface="popover"
+          placeholder="Pick a configuration"
+          [(ngModel)]="powerConfigurationId"
+          [disabled]="busy"
+          (ionChange)="savePowerConfiguration()"
+        >
+          <ion-select-option *ngFor="let configuration of powerConfigurations" [value]="configuration.id">
+            {{ configuration.name }}
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <ion-item *ngIf="!currentGame.youAreHost || powerConfigurations.length === 0">
+        <ion-label class="ion-text-wrap" [class.muted]="!currentGame.powerConfigurationName">
+          {{ currentGame.powerConfigurationName ?? (powerConfigurations.length === 0
+             ? 'No configurations yet — create one under Manage.'
+             : 'The host hasn\'t picked one yet.') }}
+        </ion-label>
+      </ion-item>
+
+      <ion-item *ngIf="selectedPowerConfiguration as configuration">
+        <ion-label class="ion-text-wrap muted">
+          {{ describePowerConfiguration(configuration) }}
+        </ion-label>
+      </ion-item>
+    </ion-list>
+
     <ng-container *ngIf="currentGame.status !== 'Lobby' && board as currentBoard">
       <ion-list [inset]="true">
         <ion-list-header>
@@ -190,11 +228,56 @@
       </div>
 
       <ng-container *ngIf="currentGame.status === 'InProgress'">
-        <!-- A failed steal against you buys a short window to take one of theirs instead. -->
-        <div *ngIf="currentBoard.yourCounterWindow as counter" class="counter">
-          Counter open against {{ counter.againstTeamName }} — play a claim card on one of their
-          boroughs before it closes.
+        <!-- A running steal is the most urgent thing on the screen: the result has to be in
+             before the clock runs out, or it counts as a failure. -->
+        <div *ngFor="let card of runningSteals" class="steal-running">
+          <p class="steal-label">Stealing {{ card.steal!.boroughName }}</p>
+          <h2>{{ card.steal!.title }}</h2>
+          <p>{{ card.steal!.summary }}</p>
+          <p class="details">{{ card.steal!.furtherDetails }}</p>
+          <p class="countdown">{{ stealCountdown(card) }}</p>
+          <div class="steal-actions">
+            <ion-button color="danger" fill="outline" [disabled]="busy" (click)="resolveSteal(card, false)">
+              Failed
+            </ion-button>
+            <ion-button [disabled]="busy" (click)="resolveSteal(card, true)">Done it</ion-button>
+          </div>
         </div>
+
+        <ion-list [inset]="true" *ngFor="let offer of currentBoard.yourPowerOffers">
+          <ion-list-header>
+            <ion-label>
+              {{ offer.reason }}
+              <p>
+                Keep {{ offer.keep === 1 ? 'one' : 'up to ' + offer.keep }} — the rest go back in the deck.
+                <span *ngIf="freePowerSlots < offer.keep">
+                  You have room for {{ freePowerSlots }}.
+                </span>
+              </p>
+            </ion-label>
+          </ion-list-header>
+
+          <ion-item *ngFor="let card of offer.cards">
+            <ion-checkbox
+              justify="space-between"
+              [checked]="isPicked(offer, card)"
+              [disabled]="busy || !canPick(offer, card)"
+              (ionChange)="togglePick(offer, card)"
+            >
+              <ion-label class="ion-text-wrap">
+                {{ card.title }}
+                <ion-badge [color]="card.kind === 'Steal' ? 'danger' : 'warning'">{{ card.kind }}</ion-badge>
+                <p>{{ card.description }}</p>
+              </ion-label>
+            </ion-checkbox>
+          </ion-item>
+
+          <ion-item lines="none">
+            <ion-button slot="end" [disabled]="busy" (click)="keepOffer(offer)">
+              {{ isPickedAny(offer) ? 'Keep' : 'Keep none' }}
+            </ion-button>
+          </ion-item>
+        </ion-list>
 
         <ion-list [inset]="true">
           <ion-list-header>
@@ -211,16 +294,56 @@
             <ion-label class="ion-text-wrap">
               {{ card.title }}
               <p>{{ card.summary }}</p>
-              <p *ngIf="card.expiresAt" class="countdown">{{ stealCountdown(card) }}</p>
             </ion-label>
-            <ion-badge slot="end" [color]="card.type === 'Steal' ? 'danger' : 'primary'">
-              {{ card.type }}
-            </ion-badge>
+            <ion-badge slot="end" color="medium">{{ card.powerDraws }} power</ion-badge>
           </ion-item>
 
           <ion-item *ngIf="currentBoard.yourHand.length === 0">
             <ion-label class="muted ion-text-wrap">
               You're not on a team, so you have no hand.
+            </ion-label>
+          </ion-item>
+        </ion-list>
+
+        <ion-list [inset]="true" *ngIf="currentGame.yourTeamId">
+          <ion-list-header>
+            <ion-label>Power cards</ion-label>
+            <ion-note class="slots">{{ unplayedPowers.length }}/{{ currentBoard.maxPowerCards }}</ion-note>
+          </ion-list-header>
+
+          <ion-item
+            button
+            *ngFor="let card of unplayedPowers"
+            [class.picked]="selectedSteal?.id === card.id"
+            [disabled]="busy"
+            (click)="viewPowerDetails(card)"
+          >
+            <ion-label class="ion-text-wrap">
+              {{ card.title }}
+              <p>{{ card.description }}</p>
+            </ion-label>
+            <ion-badge slot="end" [color]="card.kind === 'Steal' ? 'danger' : 'warning'">{{ card.kind }}</ion-badge>
+          </ion-item>
+
+          <ion-item *ngFor="let card of playedPowers" class="played">
+            <ion-label class="ion-text-wrap">
+              {{ card.title }}
+              <p *ngIf="card.steal as steal">
+                {{ steal.boroughName }} · {{ stealOutcomeLabel(steal.outcome) }}
+              </p>
+            </ion-label>
+            <ion-badge slot="end" color="medium">Played</ion-badge>
+          </ion-item>
+
+          <ion-item *ngIf="currentBoard.yourPowers.length === 0">
+            <ion-label class="muted ion-text-wrap">
+              Complete a challenge to draw power cards.
+            </ion-label>
+          </ion-item>
+
+          <ion-item lines="none">
+            <ion-label class="muted deck-count">
+              Deck: {{ currentBoard.powerDeckCount }} left, {{ currentBoard.powerDiscardCount }} discarded
             </ion-label>
           </ion-item>
         </ion-list>
@@ -238,9 +361,7 @@
               </ion-header>
 
               <ion-content class="ion-padding">
-                <ion-badge [color]="card.type === 'Steal' ? 'danger' : 'primary'">
-                  {{ card.type }}
-                </ion-badge>
+                <ion-badge color="medium">Draws {{ card.powerDraws }} power cards</ion-badge>
                 <p>{{ card.summary }}</p>
                 <p>{{ card.furtherDetails }}</p>
               </ion-content>
@@ -248,22 +369,48 @@
               <ion-footer>
                 <ion-toolbar>
                   <div class="details-footer">
-                    <ng-container *ngIf="card.type === 'Steal' && card.expiresAt; else pickTarget">
-                      <p class="ion-text-center countdown">{{ stealCountdown(card) }}</p>
-                      <ion-button expand="block" color="danger" [disabled]="busy" (click)="resolveFromDetails(false)">
-                        Failed
-                      </ion-button>
-                      <ion-button expand="block" [disabled]="busy" (click)="resolveFromDetails(true)">
-                        Done it
-                      </ion-button>
-                    </ng-container>
-                    <ng-template #pickTarget>
-                      <ion-button expand="block" [disabled]="busy" (click)="playFromDetails()">
-                        {{ selectedCard?.id === card.id
-                           ? 'Stop playing this'
-                           : (card.type === 'Steal' ? 'Pick a target to activate' : 'Play this challenge') }}
-                      </ion-button>
-                    </ng-template>
+                    <ion-button expand="block" [disabled]="busy" (click)="playFromDetails()">
+                      {{ selectedCard?.id === card.id ? 'Stop playing this' : 'Play this challenge' }}
+                    </ion-button>
+                  </div>
+                </ion-toolbar>
+              </ion-footer>
+            </ng-container>
+          </ng-template>
+        </ion-modal>
+
+        <ion-modal [isOpen]="detailsPower !== null" (didDismiss)="closePowerDetails()">
+          <ng-template>
+            <ng-container *ngIf="detailsPower as card">
+              <ion-header>
+                <ion-toolbar>
+                  <ion-title>{{ card.title }}</ion-title>
+                  <ion-buttons slot="end">
+                    <ion-button (click)="closePowerDetails()">Close</ion-button>
+                  </ion-buttons>
+                </ion-toolbar>
+              </ion-header>
+
+              <ion-content class="ion-padding">
+                <ion-badge [color]="card.kind === 'Steal' ? 'danger' : 'warning'">{{ card.kind }}</ion-badge>
+                <p>{{ card.description }}</p>
+                <p *ngIf="card.kind === 'Curse'" class="muted">
+                  Curses run on trust: the app only records that it was played. Tell the team you're
+                  cursing in the group chat.
+                </p>
+              </ion-content>
+
+              <ion-footer>
+                <ion-toolbar>
+                  <div class="details-footer">
+                    <ion-button expand="block" [disabled]="busy" (click)="playPowerFromDetails()">
+                      {{ card.kind === 'Steal'
+                         ? (selectedSteal?.id === card.id ? 'Stop picking a target' : 'Pick a borough to steal')
+                         : 'Play this curse' }}
+                    </ion-button>
+                    <ion-button expand="block" fill="clear" color="medium" [disabled]="busy" (click)="discardFromDetails()">
+                      Discard
+                    </ion-button>
                   </div>
                 </ion-toolbar>
               </ion-footer>
@@ -273,6 +420,10 @@
 
         <p class="hint ion-text-center" *ngIf="selectedCard">
           Pick where to play "{{ selectedCard.title }}".
+        </p>
+
+        <p class="hint ion-text-center" *ngIf="selectedSteal">
+          Pick a borough another team holds to steal.
         </p>
 
         <ion-list [inset]="true">
@@ -290,7 +441,7 @@
               {{ borough.name }}
               <p>{{ borough.zone }} London</p>
             </ion-label>
-            <ion-badge slot="end" color="danger" *ngIf="borough.isHot">HOT +1</ion-badge>
+            <ion-badge slot="end" color="danger" *ngIf="borough.isHot">HOT · 2× power</ion-badge>
           </ion-item>
         </ion-list>
 
@@ -303,13 +454,11 @@
             *ngFor="let territory of currentBoard.territories"
             [button]="canPlayOnTerritory(territory)"
             [disabled]="busy"
-            (click)="canPlayOnTerritory(territory) ? onTerritoryTap(territory) : null"
+            (click)="canPlayOnTerritory(territory) ? stealAt(territory) : null"
           >
             <ion-label class="ion-text-wrap">
               {{ territory.name }}
-              <p>
-                {{ territory.teamName }}<span *ngIf="territory.isLocked"> · locked for the rest of the game</span>
-              </p>
+              <p>{{ territory.teamName }}</p>
             </ion-label>
           </ion-item>
         </ion-list>
@@ -320,11 +469,15 @@
       <ion-button
         *ngIf="currentGame.youAreHost"
         expand="block"
-        [disabled]="busy"
+        [disabled]="busy || !currentGame.powerConfigurationId"
         (click)="start()"
       >
         Start game
       </ion-button>
+
+      <p *ngIf="currentGame.youAreHost && !currentGame.powerConfigurationId" class="ion-text-center muted">
+        Pick a power card deck first.
+      </p>
 
       <p *ngIf="!currentGame.youAreHost" class="ion-text-center muted">
         Waiting for the host to start the game…

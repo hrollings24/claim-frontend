@@ -7,10 +7,14 @@ import {
   GamePlayer,
   GameService,
   HandCard,
+  PowerCard,
+  PowerOffer,
+  StealOutcome,
   Territory,
   TeamScore,
 } from '../game.service';
 import { LastGameService } from '../last-game.service';
+import { PowerConfigService, PowerConfiguration } from '../power-config.service';
 
 /**
  * The roster changes rarely (someone joins, someone leaves), so it is polled rather than
@@ -30,11 +34,28 @@ export class LobbyPage {
   error: string | null = null;
   busy = false;
 
-  /** The card the player has picked up, waiting for them to choose where to play it. */
+  /** The claim card the player has picked up, waiting for them to choose where to play it. */
   selectedCard: HandCard | null = null;
 
   /** The hand card whose full details are open. Null means the modal is closed. */
   detailsCard: HandCard | null = null;
+
+  /** A Steal picked up and waiting for a target among the other teams' boroughs. */
+  selectedSteal: PowerCard | null = null;
+
+  /** The power card whose details are open. Null means that modal is closed. */
+  detailsPower: PowerCard | null = null;
+
+  /** Which cards of each pending offer the player has ticked, by offer id. */
+  private offerPicks: Record<string, string[]> = {};
+
+  /** Every configuration, for the host's picker. Loaded once per visit to the lobby. */
+  powerConfigurations: PowerConfiguration[] = [];
+
+  /** Bound to the host's picker; seeded from the game once, like the other settings. */
+  powerConfigurationId: string | null = null;
+
+  private powerConfigurationLoaded = false;
 
   /** Game length as the two fields the lobby shows, kept whole in minutes on the server. */
   durationHours = 1;
@@ -68,6 +89,7 @@ export class LobbyPage {
     private alerts: AlertController,
     private zone: NgZone,
     private lastGame: LastGameService,
+    private powerConfigs: PowerConfigService,
   ) {}
 
   ionViewWillEnter(): void {
@@ -75,7 +97,11 @@ export class LobbyPage {
     this.error = null;
     this.durationLoaded = false;
     this.hotRotationLoaded = false;
+    this.powerConfigurationLoaded = false;
+    this.selectedCard = null;
+    this.selectedSteal = null;
     void this.refresh();
+    void this.loadPowerConfigurations();
     this.pollHandle = setInterval(() => void this.refresh(), POLL_INTERVAL_MS);
   }
 
@@ -157,24 +183,14 @@ export class LobbyPage {
     return (this.board?.territories ?? []).filter(t => t.teamId === this.game?.yourTeamId);
   }
 
-  /**
-   * A claim card goes on the open board; a steal card goes at another team's borough. During a
-   * counter window a claim card can also be aimed at the team that just failed a steal.
-   */
+  /** A claim card goes on the open board, and nowhere else. */
   canPlayOnActive(borough: ActiveBorough): boolean {
-    return this.selectedCard?.type === 'Claim' && !!borough;
+    return this.selectedCard !== null && !!borough;
   }
 
+  /** A Steal goes at any borough another team holds — nothing is ever locked. */
   canPlayOnTerritory(territory: Territory): boolean {
-    if (!this.selectedCard || territory.isLocked || territory.teamId === this.game?.yourTeamId) {
-      return false;
-    }
-
-    if (this.selectedCard.type === 'Steal') {
-      return true;
-    }
-
-    return this.board?.yourCounterWindow?.againstTeamId === territory.teamId;
+    return this.selectedSteal !== null && territory.teamId !== this.game?.yourTeamId;
   }
 
   viewCardDetails(card: HandCard): void {
@@ -197,40 +213,9 @@ export class LobbyPage {
     const card = this.detailsCard;
     this.zone.run(() => {
       this.selectedCard = this.selectedCard?.id === card?.id ? null : card;
+      this.selectedSteal = null;
       this.detailsCard = null;
     });
-  }
-
-  /** Enters the outcome of a steal already activated against its target. */
-  async resolveFromDetails(succeeded: boolean): Promise<void> {
-    const card = this.detailsCard;
-    if (!card) {
-      return;
-    }
-
-    this.zone.run(() => {
-      this.detailsCard = null;
-    });
-
-    await this.act(() => this.gameService.resolveSteal(this.code, card.id, succeeded));
-  }
-
-  /** Minutes:seconds left on an activated steal, or that it's run out — still resolvable either way. */
-  stealCountdown(card: HandCard): string {
-    if (!card.expiresAt) {
-      return '';
-    }
-
-    const remainingMs = new Date(card.expiresAt).getTime() - Date.now();
-    if (remainingMs <= 0) {
-      return "Time's up";
-    }
-
-    const totalSeconds = Math.ceil(remainingMs / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-
-    return `${minutes}:${seconds.toString().padStart(2, '0')} left`;
   }
 
   timeRemaining(): string {
@@ -242,32 +227,6 @@ export class LobbyPage {
     const minutes = Math.max(0, Math.round((new Date(endsAt).getTime() - Date.now()) / 60000));
 
     return this.formatDuration(minutes) + ' left';
-  }
-
-  /**
-   * A held territory is a target for either an unactivated steal (picking one activates it) or
-   * a claim card hitting back during a counter window (resolved immediately, same as any claim).
-   */
-  onTerritoryTap(territory: Territory): void {
-    if (!this.selectedCard) {
-      return;
-    }
-
-    if (this.selectedCard.type === 'Steal') {
-      void this.activateAt(territory.id);
-    } else {
-      void this.playAt(territory.id, territory.name);
-    }
-  }
-
-  private async activateAt(boroughId: string): Promise<void> {
-    const card = this.selectedCard;
-    if (!card) {
-      return;
-    }
-
-    this.selectedCard = null;
-    await this.act(() => this.gameService.activateSteal(this.code, card.id, boroughId));
   }
 
   /** Asks how the challenge went, then plays the card either way — a spent card is spent. */
@@ -295,6 +254,224 @@ export class LobbyPage {
     await this.act(() => this.gameService.playCard(this.code, card.id, boroughId, succeeded));
   }
 
+  // ---- Power cards ----
+
+  get unplayedPowers(): PowerCard[] {
+    return (this.board?.yourPowers ?? []).filter(card => card.playedAt === null);
+  }
+
+  get playedPowers(): PowerCard[] {
+    return (this.board?.yourPowers ?? []).filter(card => card.playedAt !== null);
+  }
+
+  /** Steals played whose clock is still running — the team's most urgent business. */
+  get runningSteals(): PowerCard[] {
+    return this.playedPowers.filter(card => card.steal !== null && card.steal.outcome === null);
+  }
+
+  /** Room left under the limit on unplayed cards. */
+  get freePowerSlots(): number {
+    return Math.max(0, (this.board?.maxPowerCards ?? 0) - this.unplayedPowers.length);
+  }
+
+  isPicked(offer: PowerOffer, card: PowerCard): boolean {
+    return (this.offerPicks[offer.id] ?? []).includes(card.id);
+  }
+
+  /** How many of this offer can still be ticked — its allowance, or the room left, if smaller. */
+  pickLimit(offer: PowerOffer): number {
+    return Math.min(offer.keep, this.freePowerSlots);
+  }
+
+  canPick(offer: PowerOffer, card: PowerCard): boolean {
+    return this.isPicked(offer, card) || (this.offerPicks[offer.id] ?? []).length < this.pickLimit(offer);
+  }
+
+  togglePick(offer: PowerOffer, card: PowerCard): void {
+    const picks = this.offerPicks[offer.id] ?? [];
+
+    if (picks.includes(card.id)) {
+      this.offerPicks[offer.id] = picks.filter(id => id !== card.id);
+    } else if (this.canPick(offer, card)) {
+      this.offerPicks[offer.id] = [...picks, card.id];
+    }
+  }
+
+  isPickedAny(offer: PowerOffer): boolean {
+    return (this.offerPicks[offer.id] ?? []).length > 0;
+  }
+
+  /** Keeps whatever is ticked — possibly nothing, which turns the offer down. */
+  async keepOffer(offer: PowerOffer): Promise<void> {
+    const picks = this.offerPicks[offer.id] ?? [];
+    delete this.offerPicks[offer.id];
+    await this.act(() => this.gameService.keepPowers(this.code, offer.id, picks));
+  }
+
+  viewPowerDetails(card: PowerCard): void {
+    this.detailsPower = card;
+  }
+
+  /** Same zone caveat as {@link closeCardDetails}. */
+  closePowerDetails(): void {
+    this.zone.run(() => {
+      this.detailsPower = null;
+    });
+  }
+
+  /**
+   * A Steal is picked up and waits for a target; a curse is played on the spot, after a check,
+   * since there's no taking it back.
+   */
+  async playPowerFromDetails(): Promise<void> {
+    const card = this.detailsPower;
+    if (!card) {
+      return;
+    }
+
+    if (card.kind === 'Steal') {
+      this.zone.run(() => {
+        this.selectedSteal = this.selectedSteal?.id === card.id ? null : card;
+        this.selectedCard = null;
+        this.detailsPower = null;
+      });
+      return;
+    }
+
+    this.closePowerDetails();
+
+    const alert = await this.alerts.create({
+      header: `Play ${card.title}?`,
+      message: 'It is marked as played straight away. Tell the team you are cursing in the group chat.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Play it', handler: () => void this.act(() => this.gameService.playPower(this.code, card.id)) },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  async discardFromDetails(): Promise<void> {
+    const card = this.detailsPower;
+    if (!card) {
+      return;
+    }
+
+    this.closePowerDetails();
+
+    const alert = await this.alerts.create({
+      header: `Discard ${card.title}?`,
+      message: 'It goes back into the deck for anyone to draw.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Discard',
+          role: 'destructive',
+          handler: () => void this.act(() => this.gameService.discardPower(this.code, card.id)),
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  /** Committing a steal reveals the challenge and starts the clock, so it asks first. */
+  async stealAt(territory: Territory): Promise<void> {
+    const card = this.selectedSteal;
+    if (!card) {
+      return;
+    }
+
+    const alert = await this.alerts.create({
+      header: `Steal ${territory.name}?`,
+      subHeader: `From ${territory.teamName}`,
+      message: 'The steal challenge is revealed and its clock starts now. There is no backing out.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Steal it',
+          handler: () => {
+            this.selectedSteal = null;
+            void this.act(() => this.gameService.playPower(this.code, card.id, territory.id));
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  resolveSteal(card: PowerCard, succeeded: boolean): Promise<void> {
+    return this.act(() => this.gameService.resolveSteal(this.code, card.id, succeeded));
+  }
+
+  /** Minutes:seconds left on a running steal. Once it's out, the server fails it on the next look. */
+  stealCountdown(card: PowerCard): string {
+    if (!card.steal) {
+      return '';
+    }
+
+    const remainingMs = new Date(card.steal.expiresAt).getTime() - Date.now();
+    if (remainingMs <= 0) {
+      return "Time's up";
+    }
+
+    const totalSeconds = Math.ceil(remainingMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${minutes}:${seconds.toString().padStart(2, '0')} left`;
+  }
+
+  stealOutcomeLabel(outcome: StealOutcome | null): string {
+    switch (outcome) {
+      case 'Succeeded':
+        return 'Stolen';
+      case 'Failed':
+        return 'Failed';
+      case 'TimedOut':
+        return 'Ran out of time';
+      default:
+        return 'In progress';
+    }
+  }
+
+  // ---- Lobby settings ----
+
+  get selectedPowerConfiguration(): PowerConfiguration | null {
+    return this.powerConfigurations.find(c => c.id === this.game?.powerConfigurationId) ?? null;
+  }
+
+  describePowerConfiguration(configuration: PowerConfiguration): string {
+    return configuration.cards
+      .filter(card => card.count > 0)
+      .map(card => `${card.count} ${card.title}`)
+      .join(' · ');
+  }
+
+  savePowerConfiguration(): Promise<void> {
+    const id = this.powerConfigurationId;
+    if (!id || id === this.game?.powerConfigurationId) {
+      return Promise.resolve();
+    }
+
+    return this.act(() => this.gameService.setPowerConfiguration(this.code, id));
+  }
+
+  openPowerCards(): Promise<boolean> {
+    return this.router.navigateByUrl('/power-cards');
+  }
+
+  /** Best effort: without the list, the lobby still shows the chosen name from the game. */
+  private async loadPowerConfigurations(): Promise<void> {
+    try {
+      this.powerConfigurations = await this.powerConfigs.list();
+    } catch {
+      this.powerConfigurations = [];
+    }
+  }
+
   /** Shows which boroughs a team holds — tapped from their row in the scoreboard. */
   async showTeamBoroughs(score: TeamScore): Promise<void> {
     const held = (this.board?.territories ?? []).filter(t => t.teamId === score.teamId);
@@ -302,7 +479,7 @@ export class LobbyPage {
     const alert = await this.alerts.create({
       header: score.name,
       message: held.length > 0
-        ? held.map(t => t.name + (t.isLocked ? ' (locked)' : '')).join('<br>')
+        ? held.map(t => t.name).join('<br>')
         : 'No boroughs claimed yet.',
       buttons: ['Close'],
     });
@@ -406,6 +583,19 @@ export class LobbyPage {
     if (!this.hotRotationLoaded) {
       this.hotRotationMinutes = game.hotRotationMinutes;
       this.hotRotationLoaded = true;
+    }
+
+    if (!this.powerConfigurationLoaded) {
+      this.powerConfigurationId = game.powerConfigurationId;
+      this.powerConfigurationLoaded = true;
+    }
+
+    // A pick for an offer that's gone — kept from another phone, say — means nothing now.
+    const offerIds = new Set((game.board?.yourPowerOffers ?? []).map(offer => offer.id));
+    for (const id of Object.keys(this.offerPicks)) {
+      if (!offerIds.has(id)) {
+        delete this.offerPicks[id];
+      }
     }
   }
 

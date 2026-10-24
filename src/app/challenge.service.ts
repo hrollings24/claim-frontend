@@ -12,6 +12,11 @@ export interface Challenge {
   furtherDetails: string;
   /** Steal only. Null means the default — the challenge predates this setting. */
   stealMinutes: number | null;
+  /**
+   * Power cards completing it draws; for a steal, what the defender draws if it fails. Null
+   * means the default — the challenge predates this setting.
+   */
+  powerDraws: number | null;
   createdByName: string;
   createdAt: string;
   /** Only the author may change or remove a challenge. */
@@ -24,6 +29,7 @@ export interface NewChallenge {
   summary: string;
   furtherDetails: string;
   stealMinutes: number | null;
+  powerDraws: number;
 }
 
 @Injectable({ providedIn: 'root' })

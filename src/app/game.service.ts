@@ -23,28 +23,56 @@ export interface ActiveBorough {
   isHot: boolean;
 }
 
+/** Nothing is ever locked — any held borough can be stolen. */
 export interface Territory {
   id: string;
   name: string;
   teamId: string;
   teamName: string;
-  /** Locked boroughs are settled for the rest of the game. */
-  isLocked: boolean;
 }
 
+/** A claim challenge. The hand holds nothing else. */
 export interface HandCard {
   id: string;
-  type: 'Claim' | 'Steal';
   title: string;
   summary: string;
   furtherDetails: string;
-  /** Steal only. */
-  stealMinutes: number | null;
-  /**
-   * Steal only, and only once activated — null means the challenge is still hidden and the
-   * title/summary/furtherDetails above are placeholder text, not the real thing.
-   */
-  expiresAt: string | null;
+  /** Power cards completing it draws — doubled on the hot borough. */
+  powerDraws: number;
+}
+
+export type PowerKind = 'Steal' | 'Curse';
+
+export type StealOutcome = 'Succeeded' | 'Failed' | 'TimedOut';
+
+/** The challenge a played Steal revealed, and its clock. */
+export interface StealAttempt {
+  boroughId: string;
+  boroughName: string;
+  title: string;
+  summary: string;
+  furtherDetails: string;
+  expiresAt: string;
+  /** Null while the clock is running. */
+  outcome: StealOutcome | null;
+}
+
+/** Played cards stay in the list, marked by playedAt, so a team can see what it has used. */
+export interface PowerCard {
+  id: string;
+  kind: PowerKind;
+  title: string;
+  description: string;
+  playedAt: string | null;
+  steal: StealAttempt | null;
+}
+
+/** Cards drawn and waiting for the team to keep up to `keep` of them; the rest are discarded. */
+export interface PowerOffer {
+  id: string;
+  reason: string;
+  keep: number;
+  cards: PowerCard[];
 }
 
 export interface TeamScore {
@@ -55,20 +83,20 @@ export interface TeamScore {
   score: number;
 }
 
-export interface CounterWindow {
-  againstTeamId: string;
-  againstTeamName: string;
-  expiresAt: string;
-}
-
 export interface GameBoard {
   active: ActiveBorough[];
   hotBoroughId: string | null;
   hotRotatesAt: string;
   territories: Territory[];
   yourHand: HandCard[];
+  yourPowers: PowerCard[];
+  yourPowerOffers: PowerOffer[];
+  /** Unplayed power cards a team may hold at once. */
+  maxPowerCards: number;
+  /** Left to draw before the discard pile is shuffled back in. */
+  powerDeckCount: number;
+  powerDiscardCount: number;
   scores: TeamScore[];
-  yourCounterWindow: CounterWindow | null;
   endsAt: string | null;
 }
 
@@ -79,6 +107,9 @@ export interface Game {
   yourTeamId: string | null;
   durationMinutes: number;
   hotRotationMinutes: number;
+  /** Picked by the host in the lobby; a game can't start without one. */
+  powerConfigurationId: string | null;
+  powerConfigurationName: string | null;
   players: GamePlayer[];
   teams: GameTeam[];
   board: GameBoard | null;
@@ -141,8 +172,8 @@ export class GameService {
   }
 
   /**
-   * Plays a card at a borough, reporting whether the challenge came off. The server works out
-   * whether that is a claim, a steal or a counter-attack.
+   * Plays a claim challenge at an active borough, reporting whether it came off. A success
+   * claims it and draws power cards, which arrive as an offer to choose from.
    */
   playCard(code: string, cardId: string, boroughId: string, succeeded: boolean): Promise<Game> {
     return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/play`, {
@@ -152,19 +183,43 @@ export class GameService {
     });
   }
 
-  /** Commits a steal card to a target — reveals the challenge and starts its countdown. */
-  activateSteal(code: string, cardId: string, boroughId: string): Promise<Game> {
-    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/activate-steal`, {
-      cardId,
-      boroughId,
-    });
+  /** Keeps the chosen cards from an offer; the rest are discarded. An empty list turns it down. */
+  keepPowers(code: string, offerId: string, cardIds: string[]): Promise<Game> {
+    return this.api.post<Game>(
+      `/api/games/${encodeURIComponent(code)}/powers/offers/${encodeURIComponent(offerId)}/keep`,
+      { cardIds },
+    );
   }
 
-  /** Reports whether an already-activated steal came off. */
+  /**
+   * Plays a power card. A Steal needs a target borough: its challenge is revealed and the clock
+   * starts from this moment, with no way back.
+   */
+  playPower(code: string, cardId: string, boroughId: string | null = null): Promise<Game> {
+    return this.api.post<Game>(
+      `/api/games/${encodeURIComponent(code)}/powers/${encodeURIComponent(cardId)}/play`,
+      { boroughId },
+    );
+  }
+
+  /** Reports whether a running steal came off. Refused once its clock has run out. */
   resolveSteal(code: string, cardId: string, succeeded: boolean): Promise<Game> {
-    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/resolve-steal`, {
-      cardId,
-      succeeded,
+    return this.api.post<Game>(
+      `/api/games/${encodeURIComponent(code)}/powers/${encodeURIComponent(cardId)}/resolve`,
+      { succeeded },
+    );
+  }
+
+  /** Throws away an unplayed power card to make room under the limit. */
+  discardPower(code: string, cardId: string): Promise<Game> {
+    return this.api.post<Game>(
+      `/api/games/${encodeURIComponent(code)}/powers/${encodeURIComponent(cardId)}/discard`,
+    );
+  }
+
+  setPowerConfiguration(code: string, configurationId: string): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/power-configuration`, {
+      configurationId,
     });
   }
 

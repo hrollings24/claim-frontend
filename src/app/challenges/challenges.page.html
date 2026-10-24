@@ -41,6 +41,7 @@
           <ion-badge [color]="challenge.type === 'Steal' ? 'danger' : 'primary'">
             {{ challenge.type }}
           </ion-badge>
+          <ion-badge color="medium" class="draws">{{ challenge.powerDraws ?? 2 }} power</ion-badge>
           <p>{{ challenge.summary }}</p>
         </ion-label>
       </ion-item>

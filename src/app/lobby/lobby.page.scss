@@ -45,11 +45,51 @@
   --background: var(--ion-color-primary-tint);
 }
 
-.counter {
-  background: var(--ion-color-warning-tint);
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
+.steal-running {
+  background: var(--app-grouped-card);
+  border: 1px solid var(--ion-color-danger);
+  border-radius: 1rem;
   margin: 0 1rem 1rem;
+  padding: 1rem;
+
+  h2 {
+    margin: 0.25rem 0 0.5rem;
+  }
+
+  .details {
+    white-space: pre-wrap;
+  }
+}
+
+.steal-label {
+  color: var(--ion-color-danger);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.steal-actions {
+  display: flex;
+  gap: 0.5rem;
+
+  ion-button {
+    flex: 1;
+    margin: 0;
+  }
+}
+
+.played {
+  opacity: 0.55;
+}
+
+.slots {
+  margin-right: 1rem;
+}
+
+.deck-count {
+  font-size: 0.8rem;
 }
 
 .hint {

@@ -1,0 +1,53 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+
+    <ion-title>Power cards</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button routerLink="/power-cards/new">Add</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Power cards</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-refresher slot="fixed" (ionRefresh)="reload($any($event))">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <p class="intro">
+    A configuration says how many of each power card go into a game's deck. The host picks one
+    in the lobby. Anyone can edit any of them — a game already running keeps the deck it started
+    with.
+  </p>
+
+  <p *ngIf="error" class="ion-text-center ion-padding error">{{ error }}</p>
+
+  <ion-list [inset]="true" *ngIf="configurations.length > 0">
+    <ion-item
+      button
+      detail
+      *ngFor="let configuration of configurations"
+      [routerLink]="['/power-cards', configuration.id, 'edit']"
+    >
+      <ion-label class="ion-text-wrap">
+        <h2>{{ configuration.name }}</h2>
+        <p>{{ describe(configuration) }}</p>
+      </ion-label>
+      <ion-badge slot="end" color="medium">{{ configuration.totalCards }} cards</ion-badge>
+    </ion-item>
+  </ion-list>
+
+  <div *ngIf="!loading && !error && configurations.length === 0" class="ion-text-center ion-padding empty">
+    <p>No configurations yet. A game needs one before it can start.</p>
+    <ion-button fill="outline" routerLink="/power-cards/new">Create the first one</ion-button>
+  </div>
+</ion-content>

@@ -1,0 +1,26 @@
+.error {
+  color: var(--ion-color-danger);
+}
+
+.hint {
+  color: var(--ion-color-medium);
+  font-size: 0.85rem;
+  margin: 0.75rem 0.5rem 0;
+}
+
+.total {
+  margin-right: 1rem;
+}
+
+.stepper {
+  align-items: center;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  min-width: 1.75rem;
+  text-align: center;
+}

@@ -26,8 +26,8 @@
 
   <p class="type-hint">
     {{ type === 'Claim'
-       ? 'Played to take an unclaimed borough — exploration and travel suit these.'
-       : 'Played to take a borough off another team — skill challenges suit these.' }}
+       ? 'Dealt into hands and played to take an unclaimed borough — exploration and travel suit these.'
+       : 'Revealed when a team plays a Steal power card against another team\'s borough — skill challenges suit these.' }}
   </p>
 
   <ion-list [inset]="true">
@@ -75,10 +75,25 @@
         [(ngModel)]="stealMinutes"
       ></ion-input>
     </ion-item>
+
+    <ion-item>
+      <ion-select
+        [label]="type === 'Claim' ? 'Power cards drawn on completing it' : 'Power cards the defender draws if it fails'"
+        labelPlacement="stacked"
+        interface="popover"
+        [(ngModel)]="powerDraws"
+      >
+        <ion-select-option *ngFor="let draws of powerDrawOptions" [value]="draws">
+          {{ draws }}
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
   </ion-list>
 
-  <p class="type-hint" *ngIf="type === 'Steal'">
-    Hidden in a hand until a team picks a target — the countdown above starts the moment they do.
+  <p class="type-hint">
+    {{ type === 'Claim'
+       ? 'Harder challenges should draw more. The team keeps one of the cards drawn — or two, and twice as many drawn, on the hot borough.'
+       : 'The team picks a target first; this is revealed and the countdown above starts the moment they do. The result has to be in before it runs out.' }}
   </p>
 
   <p *ngIf="error" class="ion-text-center error">{{ error }}</p>

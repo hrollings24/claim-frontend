@@ -1,0 +1,65 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/power-cards"></ion-back-button>
+    </ion-buttons>
+
+    <ion-title>{{ isEditing ? 'Edit configuration' : 'New configuration' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">{{ isEditing ? 'Edit configuration' : 'New configuration' }}</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-list [inset]="true">
+    <ion-item>
+      <ion-input
+        label="Name"
+        labelPlacement="stacked"
+        placeholder="e.g. Steal-heavy"
+        maxlength="40"
+        [(ngModel)]="name"
+      ></ion-input>
+    </ion-item>
+  </ion-list>
+
+  <ion-list [inset]="true">
+    <ion-list-header>
+      <ion-label>Cards in the deck</ion-label>
+      <ion-note class="total">{{ totalCards }} total</ion-note>
+    </ion-list-header>
+
+    <ion-item *ngFor="let card of cards">
+      <ion-label class="ion-text-wrap">
+        {{ card.title }}
+        <ion-badge [color]="card.kind === 'Steal' ? 'danger' : 'warning'">{{ card.kind }}</ion-badge>
+        <p>{{ card.description }}</p>
+      </ion-label>
+
+      <div slot="end" class="stepper">
+        <ion-button fill="outline" size="small" [disabled]="card.count === 0" (click)="change(card, -1)">
+          −
+        </ion-button>
+        <span class="count">{{ card.count }}</span>
+        <ion-button fill="outline" size="small" [disabled]="card.count >= maxCopies" (click)="change(card, 1)">
+          +
+        </ion-button>
+      </div>
+    </ion-item>
+  </ion-list>
+
+  <p class="hint">
+    Every game draws from one shared deck of exactly these cards. Cards nobody keeps are reshuffled
+    back in; kept ones are gone for good — so 5 Steals means at most 5 in the whole game.
+  </p>
+
+  <p *ngIf="error" class="ion-text-center error">{{ error }}</p>
+
+  <ion-button expand="block" class="ion-margin-top" [disabled]="!canSave" (click)="save()">
+    {{ saving ? 'Saving…' : (isEditing ? 'Save changes' : 'Save configuration') }}
+  </ion-button>
+</ion-content>

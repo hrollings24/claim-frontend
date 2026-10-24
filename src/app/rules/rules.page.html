@@ -27,7 +27,7 @@
     <span>Move</span>
     <span>Complete a challenge</span>
     <span>Claim</span>
-    <span>Contest</span>
+    <span>Draw power cards</span>
   </div>
 
   <ion-accordion-group>
@@ -54,17 +54,16 @@
       </ion-item>
       <div class="body ion-padding" slot="content">
         <p>
-          One borough on the board is always <span class="key">hot</span>. Claim it and you score
-          <span class="key">{{ hotBonus + 1 }} points instead of 1</span>.
+          One borough on the board is <span class="key">hot</span>. Claim it and you score
+          <span class="key">{{ hotBonus + 1 }} points instead of 1</span>, draw
+          <span class="key">twice as many power cards</span>, and keep two of them instead of one.
         </p>
         <p>
-          It moves every {{ hotRotation }}, and straight away if someone claims it. A hot borough
-          is always one nobody holds — so it is always up for grabs, and always a decision about
-          whether the journey is worth it.
+          It moves every {{ hotRotation }}, and straight away if someone claims it. A borough can
+          only ever be hot once — once the heat has moved on, it never comes back there.
         </p>
         <p class="aside">
-          A borough claimed while hot is locked for the rest of the game, so nobody can take it
-          back off you.
+          The bonus point is yours to keep even if the borough is later stolen from you.
         </p>
       </div>
     </ion-accordion>
@@ -75,19 +74,13 @@
       </ion-item>
       <div class="body ion-padding" slot="content">
         <p>
-          Each team holds <span class="key">{{ handSize }} cards</span>, dealt from the challenges
-          everyone has written. Play one and it is spent, whether or not you managed it, and a new
-          card takes its place.
+          Each team holds <span class="key">{{ handSize }} claim challenges</span>, dealt from the
+          ones everyone has written. Play one at a borough on the board and it is spent, whether or
+          not you managed it, and a new one takes its place.
         </p>
         <p>
-          <span class="key">Claim cards</span> are played on the open board. <span class="key">Steal
-          cards</span> are played on boroughs another team already holds.
-        </p>
-        <p>
-          A steal card stays hidden in your hand — you only ever see "Steal challenge" — until you
-          pick which borough to target. The moment you do, it reveals what it actually is and a
-          countdown starts, {{ stealTimer }} by default. There is no cancelling once it starts;
-          when time's up you still enter whether you managed it, whenever you get to it.
+          Complete it and the borough is yours — and you draw power cards. Each challenge says how
+          many it draws; harder ones draw more.
         </p>
         <p class="aside">
           Nothing can check whether you really found that postcard, so you report the outcome
@@ -96,46 +89,46 @@
       </div>
     </ion-accordion>
 
-    <ion-accordion value="stealing">
+    <ion-accordion value="powers">
       <ion-item slot="header">
-        <ion-label>Stealing, and hitting back</ion-label>
+        <ion-label>Power cards</ion-label>
       </ion-item>
       <div class="body ion-padding" slot="content">
         <p>
-          A successful steal takes the borough — a two point swing, since they lose one and you
-          gain one.
+          When you draw power cards you <span class="key">keep one</span> and the rest go back in
+          the deck. You can hold up to <span class="key">{{ maxPowerCards }}</span> unplayed at once,
+          and play them whenever you like. Played cards stay on your list, marked as played.
         </p>
         <p>
-          Fail, and the team you attacked gets <span class="key">{{ counterWindow }}</span> to hit
-          back. Wherever they happen to be, they complete a claim challenge — and if they manage
-          it, they take any borough of yours they like. No travelling to it, no restriction on
-          which one, beyond it not being locked.
+          <span class="key">Curses</span>, like No tube, slow another team down. The app only
+          records that you played one — tell them in the group chat, and they stick to it.
         </p>
         <p>
-          The window stays open for the full {{ counterWindow }}, so a failed attempt doesn't end
-          it — they can try again with another card until the time runs out.
-        </p>
-        <p class="aside">
-          Only the team that was attacked gets this, and only against the team that attacked
-          them. Attacking is not free.
+          Every game draws from one shared deck. The host picks how many of each card go in it
+          from the power card configurations, which anyone can edit. Cards kept are gone from the
+          deck for good, so the numbers set how many can ever be in play.
         </p>
       </div>
     </ion-accordion>
 
-    <ion-accordion value="locks">
+    <ion-accordion value="stealing">
       <ion-item slot="header">
-        <ion-label>Locks</ion-label>
+        <ion-label>Stealing</ion-label>
       </ion-item>
       <div class="body ion-padding" slot="content">
         <p>
-          A borough taken by stealing, or claimed while it was hot, is
-          <span class="key">locked for the rest of the game</span>. It cannot be contested again
-          by anyone — it is settled.
+          <span class="key">Steal</span> is the most powerful power card. Play it at any borough
+          another team holds — nothing is ever locked — and a steal challenge is revealed, with a
+          countdown, {{ stealTimer }} by default.
         </p>
         <p>
-          So the boroughs still worth fighting over are the ones taken by an ordinary claim. Every
-          steal and every hot claim takes one off the table permanently, and the game tightens as
-          it goes.
+          Finish it and enter the result <span class="key">before the clock runs out</span>, and the
+          borough is yours — a two point swing. Fail, or let the time run out, and nothing moves —
+          but the team you targeted draws power cards for holding on.
+        </p>
+        <p class="aside">
+          There is no backing out once the challenge is revealed. Pick your target before you see
+          what you'll have to do.
         </p>
       </div>
     </ion-accordion>

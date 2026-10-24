@@ -10,15 +10,26 @@ import { ChallengeService, ChallengeType } from '../challenge.service';
   standalone: false,
 })
 export class ChallengeNewPage {
-  /** Claim cards are played on unclaimed boroughs, steal cards on ones another team holds. */
+  /**
+   * Claim challenges make up every hand. Steal challenges never sit in a hand: one is revealed
+   * at random when a team plays a Steal power card.
+   */
   type: ChallengeType = 'Claim';
 
   title = '';
   summary = '';
   furtherDetails = '';
 
-  /** Steal only — how long the countdown runs once a team activates this steal. */
+  /** Steal only — how long the countdown runs once a team plays a Steal and this is revealed. */
   stealMinutes = 5;
+
+  /**
+   * How many power cards completing it draws — harder challenges should draw more. For a steal,
+   * it is what the defending team draws if the steal fails.
+   */
+  powerDraws = 2;
+
+  readonly powerDrawOptions = [1, 2, 3, 4, 5];
 
   saving = false;
   loading = false;
@@ -44,6 +55,7 @@ export class ChallengeNewPage {
     this.summary = '';
     this.furtherDetails = '';
     this.stealMinutes = 5;
+    this.powerDraws = 2;
     this.error = null;
     this.editingId = this.route.snapshot.paramMap.get('id');
 
@@ -61,6 +73,7 @@ export class ChallengeNewPage {
       this.summary = challenge.summary;
       this.furtherDetails = challenge.furtherDetails;
       this.stealMinutes = challenge.stealMinutes ?? 5;
+      this.powerDraws = challenge.powerDraws ?? 2;
     } catch (error: unknown) {
       this.error = problemMessage(error, 'Could not load that challenge.');
     } finally {
@@ -91,6 +104,7 @@ export class ChallengeNewPage {
         summary: this.summary.trim(),
         furtherDetails: this.furtherDetails.trim(),
         stealMinutes: this.type === 'Steal' ? this.stealMinutes : null,
+        powerDraws: this.powerDraws,
       };
 
       await (this.editingId === null

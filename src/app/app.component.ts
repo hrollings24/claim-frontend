@@ -83,6 +83,11 @@ export class AppComponent {
     await this.router.navigateByUrl('/challenges');
   }
 
+  async openPowerCards(): Promise<void> {
+    await this.menu.close();
+    await this.router.navigateByUrl('/power-cards');
+  }
+
   async logout(): Promise<void> {
     await this.menu.close();
 

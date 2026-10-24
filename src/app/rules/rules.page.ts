@@ -16,7 +16,7 @@ export class RulesPage {
   readonly hotBonus = 1;
   /** The default — the host can set a different rotation time per game in the lobby. */
   readonly hotRotation = '90 minutes';
-  readonly counterWindow = '15 minutes';
+  readonly maxPowerCards = 5;
   readonly boroughCount = 32;
   /** The default — whoever wrote the steal sets its own timer in Challenges. */
   readonly stealTimer = '5 minutes';
