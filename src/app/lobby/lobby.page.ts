@@ -8,6 +8,8 @@ import {
   GameService,
   HandCard,
   PowerCard,
+  PowerKind,
+  powerKindColor,
   PowerOffer,
   StealOutcome,
   Territory,
@@ -56,6 +58,8 @@ export class LobbyPage {
   powerConfigurationId: string | null = null;
 
   private powerConfigurationLoaded = false;
+
+  readonly kindColor: (kind: PowerKind) => string = powerKindColor;
 
   /** Game length as the two fields the lobby shows, kept whole in minutes on the server. */
   durationHours = 1;
@@ -320,8 +324,8 @@ export class LobbyPage {
   }
 
   /**
-   * A Steal is picked up and waits for a target; a curse is played on the spot, after a check,
-   * since there's no taking it back.
+   * A Steal is picked up and waits for a target; a curse or boost is played on the spot, after a
+   * check, since there's no taking it back.
    */
   async playPowerFromDetails(): Promise<void> {
     const card = this.detailsPower;
@@ -342,7 +346,9 @@ export class LobbyPage {
 
     const alert = await this.alerts.create({
       header: `Play ${card.title}?`,
-      message: 'It is marked as played straight away. Tell the team you are cursing in the group chat.',
+      message: card.kind === 'Boost'
+        ? 'It is marked as played straight away. Let the others know in the group chat if it affects them.'
+        : 'It is marked as played straight away. Tell the team you are cursing in the group chat.',
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         { text: 'Play it', handler: () => void this.act(() => this.gameService.playPower(this.code, card.id)) },

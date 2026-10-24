@@ -41,7 +41,20 @@ export interface HandCard {
   powerDraws: number;
 }
 
-export type PowerKind = 'Steal' | 'Curse';
+/** Steal is built in; Curse (played on another team) and Boost (on yourself) are written by players. */
+export type PowerKind = 'Steal' | 'Curse' | 'Boost';
+
+/** One colour per kind, used everywhere a power card shows its kind. */
+export function powerKindColor(kind: PowerKind): string {
+  switch (kind) {
+    case 'Steal':
+      return 'danger';
+    case 'Boost':
+      return 'success';
+    default:
+      return 'warning';
+  }
+}
 
 export type StealOutcome = 'Succeeded' | 'Failed' | 'TimedOut';
 

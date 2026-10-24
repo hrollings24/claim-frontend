@@ -1,0 +1,66 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/power-cards"></ion-back-button>
+    </ion-buttons>
+
+    <ion-title>{{ isEditing ? 'Edit power card' : 'New power card' }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">{{ isEditing ? 'Edit power card' : 'New power card' }}</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-segment [(ngModel)]="kind">
+    <ion-segment-button value="Curse"><ion-label>Curse</ion-label></ion-segment-button>
+    <ion-segment-button value="Boost"><ion-label>Boost</ion-label></ion-segment-button>
+  </ion-segment>
+
+  <p class="hint">
+    {{ kind === 'Curse'
+       ? 'Played on another team to slow them down — no tube, stairs only, stay put.'
+       : 'Played on yourself — shrug off a curse, take a cab, bend a rule.' }}
+  </p>
+
+  <ion-list [inset]="true">
+    <ion-item>
+      <ion-input
+        label="Title"
+        labelPlacement="stacked"
+        placeholder="e.g. Mind the gap"
+        maxlength="60"
+        [(ngModel)]="title"
+      ></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-textarea
+        label="What it does"
+        labelPlacement="stacked"
+        placeholder="e.g. The team you curse must take the stairs, never escalators or lifts, for 30 minutes."
+        maxlength="500"
+        rows="4"
+        [autoGrow]="true"
+        [(ngModel)]="description"
+      ></ion-textarea>
+    </ion-item>
+  </ion-list>
+
+  <p class="hint">
+    New cards start at zero in every deck — add copies to a deck under Power cards › Decks.
+  </p>
+
+  <p *ngIf="error" class="ion-text-center error">{{ error }}</p>
+
+  <ion-button expand="block" class="ion-margin-top" [disabled]="!canSave" (click)="save()">
+    {{ saving ? 'Saving…' : (isEditing ? 'Save changes' : 'Save power card') }}
+  </ion-button>
+
+  <ion-button *ngIf="isEditing" expand="block" fill="clear" color="danger" (click)="confirmDelete()">
+    Delete power card
+  </ion-button>
+</ion-content>

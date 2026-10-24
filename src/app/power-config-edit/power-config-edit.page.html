@@ -36,7 +36,7 @@
     <ion-item *ngFor="let card of cards">
       <ion-label class="ion-text-wrap">
         {{ card.title }}
-        <ion-badge [color]="card.kind === 'Steal' ? 'danger' : 'warning'">{{ card.kind }}</ion-badge>
+        <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
         <p>{{ card.description }}</p>
       </ion-label>
 

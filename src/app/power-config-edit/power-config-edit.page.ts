@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { problemMessage } from '../api-client.service';
+import { PowerKind, powerKindColor } from '../game.service';
 import { MAX_POWER_COPIES, PowerConfigService, PowerCount } from '../power-config.service';
 
 @Component({
@@ -16,6 +17,8 @@ export class PowerConfigEditPage {
   cards: PowerCount[] = [];
 
   readonly maxCopies = MAX_POWER_COPIES;
+
+  readonly kindColor: (kind: PowerKind) => string = powerKindColor;
 
   saving = false;
   loading = false;

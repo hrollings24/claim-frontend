@@ -266,7 +266,7 @@
             >
               <ion-label class="ion-text-wrap">
                 {{ card.title }}
-                <ion-badge [color]="card.kind === 'Steal' ? 'danger' : 'warning'">{{ card.kind }}</ion-badge>
+                <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
                 <p>{{ card.description }}</p>
               </ion-label>
             </ion-checkbox>
@@ -322,7 +322,7 @@
               {{ card.title }}
               <p>{{ card.description }}</p>
             </ion-label>
-            <ion-badge slot="end" [color]="card.kind === 'Steal' ? 'danger' : 'warning'">{{ card.kind }}</ion-badge>
+            <ion-badge slot="end" [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
           </ion-item>
 
           <ion-item *ngFor="let card of playedPowers" class="played">
@@ -392,11 +392,15 @@
               </ion-header>
 
               <ion-content class="ion-padding">
-                <ion-badge [color]="card.kind === 'Steal' ? 'danger' : 'warning'">{{ card.kind }}</ion-badge>
+                <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
                 <p>{{ card.description }}</p>
                 <p *ngIf="card.kind === 'Curse'" class="muted">
                   Curses run on trust: the app only records that it was played. Tell the team you're
                   cursing in the group chat.
+                </p>
+                <p *ngIf="card.kind === 'Boost'" class="muted">
+                  Boosts run on trust: the app only records that it was played. Let the others know
+                  in the group chat if it affects them.
                 </p>
               </ion-content>
 
@@ -406,7 +410,7 @@
                     <ion-button expand="block" [disabled]="busy" (click)="playPowerFromDetails()">
                       {{ card.kind === 'Steal'
                          ? (selectedSteal?.id === card.id ? 'Stop picking a target' : 'Pick a borough to steal')
-                         : 'Play this curse' }}
+                         : (card.kind === 'Boost' ? 'Play this boost' : 'Play this curse') }}
                     </ion-button>
                     <ion-button expand="block" fill="clear" color="medium" [disabled]="busy" (click)="discardFromDetails()">
                       Discard

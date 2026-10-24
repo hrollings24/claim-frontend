@@ -38,6 +38,16 @@ const routes: Routes = [
     loadChildren: () => import('./challenges/challenges.module').then( m => m.ChallengesPageModule)
   },
   {
+    path: 'power-cards/cards/new',
+    canActivate: [authGuard],
+    loadChildren: () => import('./power-card-edit/power-card-edit.module').then( m => m.PowerCardEditPageModule)
+  },
+  {
+    path: 'power-cards/cards/:id/edit',
+    canActivate: [authGuard],
+    loadChildren: () => import('./power-card-edit/power-card-edit.module').then( m => m.PowerCardEditPageModule)
+  },
+  {
     path: 'power-cards/new',
     canActivate: [authGuard],
     loadChildren: () => import('./power-config-edit/power-config-edit.module').then( m => m.PowerConfigEditPageModule)
