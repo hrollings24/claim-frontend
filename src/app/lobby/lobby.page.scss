@@ -80,8 +80,54 @@
   }
 }
 
-.played {
-  opacity: 0.55;
+.alert-card {
+  background: var(--app-grouped-card);
+  border-radius: 1rem;
+  margin: 0 1rem 1rem;
+  padding: 1rem;
+
+  h2 {
+    margin: 0.25rem 0 0.5rem;
+  }
+}
+
+.steal-incoming {
+  border: 1px solid var(--ion-color-danger);
+}
+
+.curse-on-you {
+  border: 1px solid var(--ion-color-warning);
+}
+
+.alert-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.steal-incoming .alert-label {
+  color: var(--ion-color-danger);
+}
+
+.curse-on-you .alert-label {
+  color: var(--ion-color-warning);
+}
+
+.alert-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  ion-button {
+    flex: 1;
+    margin: 0;
+  }
+}
+
+.small {
+  font-size: 0.85rem;
 }
 
 .slots {

@@ -11,7 +11,8 @@ export class RulesPage {
    * The numbers the engine actually runs on (see GamesOptions in the API). Held here so the
    * page states them once rather than repeating them through the prose.
    */
-  readonly activeBoroughs = 6;
+  readonly minBoard = 4;
+  readonly maxBoard = 10;
   readonly handSize = 5;
   readonly hotBonus = 1;
   /** The default — the host can set a different rotation time per game in the lobby. */

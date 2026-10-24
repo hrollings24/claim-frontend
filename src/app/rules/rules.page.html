@@ -37,8 +37,9 @@
       </ion-item>
       <div class="body ion-padding" slot="content">
         <p>
-          <span class="key">{{ activeBoroughs }} boroughs</span> are on offer at any moment, drawn
-          from London's {{ boroughCount }}. Everything on the board is unclaimed — claiming one
+          A handful of boroughs are on offer at any moment, drawn from London's {{ boroughCount }} —
+          <span class="key">four more than there are teams</span> unless the host picks a number
+          ({{ minBoard }}–{{ maxBoard }}). Everything on the board is unclaimed — claiming one
           takes it off the board and into your territory, and another borough takes its place.
         </p>
         <p>
@@ -100,9 +101,13 @@
           and play them whenever you like. Played cards stay on your list, marked as played.
         </p>
         <p>
-          <span class="key">Curses</span>, like No tube, slow another team down.
+          <span class="key">Curses</span> slow another team down. Pick who gets it and it lands on
+          them straight away — they're told, and it shows on their screen. Some last a set time and
+          lift on their own; others last until the cursed team marks them cleared.
+        </p>
+        <p>
           <span class="key">Boosts</span> help your own team. The app only records that you played
-          one — say so in the group chat, and everyone sticks to it.
+          one — say so in the group chat if it affects anyone.
         </p>
         <p>
           Anyone can write new curses and boosts under Power cards in the menu.
@@ -111,6 +116,28 @@
           Every game draws from one shared deck. The host picks how many of each card go in it
           from the power card configurations, which anyone can edit. Cards kept are gone from the
           deck for good, so the numbers set how many can ever be in play.
+        </p>
+      </div>
+    </ion-accordion>
+
+    <ion-accordion value="answers">
+      <ion-item slot="header">
+        <ion-label>Veto and Curse Reverse</ion-label>
+      </ion-item>
+      <div class="body ion-padding" slot="content">
+        <p>
+          Hold on to these — you use them on something aimed at you, from the curse or steal
+          itself. Nothing happens automatically: a curse stays on you until you choose to answer
+          it, or it runs out.
+        </p>
+        <p>
+          A <span class="key">Veto</span> cancels a curse on you, or stops a steal on one of your
+          boroughs dead — nothing moves, and their Steal is spent.
+        </p>
+        <p>
+          A <span class="key">Curse Reverse</span> sends a curse back to the team that cast it, and
+          it starts again on them with its full time. A reversed curse can't be reversed back — but
+          it can still be vetoed.
         </p>
       </div>
     </ion-accordion>
@@ -132,7 +159,7 @@
         </p>
         <p class="aside">
           There is no backing out once the challenge is revealed. Pick your target before you see
-          what you'll have to do.
+          what you'll have to do. The team you're stealing from is told — and a Veto stops you.
         </p>
       </div>
     </ion-accordion>

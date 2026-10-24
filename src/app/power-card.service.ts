@@ -7,15 +7,19 @@ export interface PowerCardDefinition {
   kind: PowerKind;
   title: string;
   description: string;
-  /** Steal: it has rules behind it, so nobody can edit or delete it. */
+  /** Curse only: how long it lasts. Null lasts until the cursed team clears it. */
+  durationMinutes: number | null;
+  /** Steal, Veto and Curse Reverse have rules behind them, so nobody can edit or delete them. */
   isBuiltIn: boolean;
 }
 
-/** Only Curse or Boost — there is only ever the one, built-in, Steal. */
+/** Only Curse or Boost — the rest are built in. */
 export interface SavePowerCard {
   kind: 'Curse' | 'Boost';
   title: string;
   description: string;
+  /** Kept for a curse only. */
+  durationMinutes: number | null;
 }
 
 /**

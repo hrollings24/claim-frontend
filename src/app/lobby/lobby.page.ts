@@ -3,10 +3,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import {
   ActiveBorough,
+  Curse,
   Game,
   GamePlayer,
   GameService,
   HandCard,
+  IncomingSteal,
   PowerCard,
   PowerKind,
   powerKindColor,
@@ -73,6 +75,13 @@ export class LobbyPage {
 
   readonly hotRotationOptions = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180];
 
+  /** Boroughs on the board. Null leaves it to the game, which fits it to the number of teams. */
+  boardSize: number | null = null;
+
+  readonly boardSizeOptions = [4, 5, 6, 7, 8, 9, 10];
+
+  private boardSizeLoaded = false;
+
   code = '';
   private pollHandle: ReturnType<typeof setInterval> | null = null;
   private refreshing = false;
@@ -102,6 +111,7 @@ export class LobbyPage {
     this.durationLoaded = false;
     this.hotRotationLoaded = false;
     this.powerConfigurationLoaded = false;
+    this.boardSizeLoaded = false;
     this.selectedCard = null;
     this.selectedSteal = null;
     void this.refresh();
@@ -344,14 +354,43 @@ export class LobbyPage {
 
     this.closePowerDetails();
 
+    if (card.kind === 'Curse') {
+      await this.pickCurseTarget(card);
+      return;
+    }
+
     const alert = await this.alerts.create({
       header: `Play ${card.title}?`,
-      message: card.kind === 'Boost'
-        ? 'It is marked as played straight away. Let the others know in the group chat if it affects them.'
-        : 'It is marked as played straight away. Tell the team you are cursing in the group chat.',
+      message: 'It is marked as played straight away. Let the others know in the group chat if it affects them.',
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         { text: 'Play it', handler: () => void this.act(() => this.gameService.playPower(this.code, card.id)) },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  /** A curse lands on one team, picked here; they're told by notification and see it in the app. */
+  private async pickCurseTarget(card: PowerCard): Promise<void> {
+    const others = (this.game?.teams ?? []).filter(team => team.id !== this.game?.yourTeamId);
+
+    const alert = await this.alerts.create({
+      header: `Who gets ${card.title}?`,
+      subHeader: card.durationMinutes ? `For ${card.durationMinutes} minutes` : 'Until they mark it cleared',
+      inputs: others.map((team, index) => ({
+        type: 'radio' as const,
+        label: team.name,
+        value: team.id,
+        checked: index === 0,
+      })),
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Curse them',
+          handler: (teamId: string) =>
+            void this.act(() => this.gameService.playPower(this.code, card.id, { targetTeamId: teamId })),
+        },
       ],
     });
 
@@ -399,7 +438,7 @@ export class LobbyPage {
           text: 'Steal it',
           handler: () => {
             this.selectedSteal = null;
-            void this.act(() => this.gameService.playPower(this.code, card.id, territory.id));
+            void this.act(() => this.gameService.playPower(this.code, card.id, { boroughId: territory.id }));
           },
         },
       ],
@@ -414,11 +453,11 @@ export class LobbyPage {
 
   /** Minutes:seconds left on a running steal. Once it's out, the server fails it on the next look. */
   stealCountdown(card: PowerCard): string {
-    if (!card.steal) {
-      return '';
-    }
+    return card.steal ? this.countdownTo(card.steal.expiresAt) : '';
+  }
 
-    const remainingMs = new Date(card.steal.expiresAt).getTime() - Date.now();
+  countdownTo(deadline: string): string {
+    const remainingMs = new Date(deadline).getTime() - Date.now();
     if (remainingMs <= 0) {
       return "Time's up";
     }
@@ -430,6 +469,79 @@ export class LobbyPage {
     return `${minutes}:${seconds.toString().padStart(2, '0')} left`;
   }
 
+  // ---- Curses and vetoes ----
+
+  get cursesOnYou(): Curse[] {
+    return (this.board?.activeCurses ?? []).filter(curse => curse.onYou);
+  }
+
+  get cursesYouCast(): Curse[] {
+    return (this.board?.activeCurses ?? []).filter(curse => !curse.onYou);
+  }
+
+  get incomingSteals(): IncomingSteal[] {
+    return this.board?.incomingSteals ?? [];
+  }
+
+  /** The first unplayed card of a kind — which copy of a Veto gets used makes no difference. */
+  private held(kind: 'Veto' | 'Reverse'): PowerCard | null {
+    return this.unplayedPowers.find(card => card.kind === kind) ?? null;
+  }
+
+  get canVeto(): boolean {
+    return this.held('Veto') !== null;
+  }
+
+  canReverse(curse: Curse): boolean {
+    return !curse.isReversal && this.held('Reverse') !== null;
+  }
+
+  /** Never automatic: the team picks a Veto or Reverse and uses it on this curse. */
+  async answerCurse(curse: Curse, kind: 'Veto' | 'Reverse'): Promise<void> {
+    const card = this.held(kind);
+    if (!card) {
+      return;
+    }
+
+    const alert = await this.alerts.create({
+      header: kind === 'Veto' ? `Veto ${curse.title}?` : `Reverse ${curse.title}?`,
+      message: kind === 'Veto'
+        ? 'It is lifted straight away, and your Veto is spent.'
+        : `It starts again on ${curse.fromTeamName}, with its full time. It can't be sent back to you.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: kind === 'Veto' ? 'Veto it' : 'Reverse it',
+          handler: () => void this.act(() => this.gameService.respondToCurse(this.code, curse.id, card.id)),
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  clearCurse(curse: Curse): Promise<void> {
+    return this.act(() => this.gameService.clearCurse(this.code, curse.id));
+  }
+
+  async vetoSteal(steal: IncomingSteal): Promise<void> {
+    const card = this.held('Veto');
+    if (!card) {
+      return;
+    }
+
+    const alert = await this.alerts.create({
+      header: `Veto the steal on ${steal.boroughName}?`,
+      message: `${steal.fromTeamName}'s steal ends now and ${steal.boroughName} stays yours. Your Veto is spent.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Veto it', handler: () => void this.act(() => this.gameService.vetoSteal(this.code, steal.id, card.id)) },
+      ],
+    });
+
+    await alert.present();
+  }
+
   stealOutcomeLabel(outcome: StealOutcome | null): string {
     switch (outcome) {
       case 'Succeeded':
@@ -438,6 +550,8 @@ export class LobbyPage {
         return 'Failed';
       case 'TimedOut':
         return 'Ran out of time';
+      case 'Vetoed':
+        return 'Vetoed';
       default:
         return 'In progress';
     }
@@ -454,6 +568,10 @@ export class LobbyPage {
       .filter(card => card.count > 0)
       .map(card => `${card.count} ${card.title}`)
       .join(' · ');
+  }
+
+  saveBoardSize(): Promise<void> {
+    return this.act(() => this.gameService.setBoardSize(this.code, this.boardSize));
   }
 
   savePowerConfiguration(): Promise<void> {
@@ -589,6 +707,11 @@ export class LobbyPage {
     if (!this.hotRotationLoaded) {
       this.hotRotationMinutes = game.hotRotationMinutes;
       this.hotRotationLoaded = true;
+    }
+
+    if (!this.boardSizeLoaded) {
+      this.boardSize = game.boardSize;
+      this.boardSizeLoaded = true;
     }
 
     if (!this.powerConfigurationLoaded) {

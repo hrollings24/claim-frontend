@@ -17,6 +17,11 @@ export class PowerCardEditPage {
   title = '';
   description = '';
 
+  /** Curse only. Null lasts until the cursed team marks it cleared. */
+  durationMinutes: number | null = null;
+
+  readonly durationOptions = [5, 10, 15, 20, 30, 45, 60, 90, 120];
+
   saving = false;
   loading = false;
   error: string | null = null;
@@ -49,6 +54,7 @@ export class PowerCardEditPage {
     this.kind = 'Curse';
     this.title = '';
     this.description = '';
+    this.durationMinutes = null;
     this.error = null;
     this.editingId = this.route.snapshot.paramMap.get('id');
 
@@ -64,6 +70,7 @@ export class PowerCardEditPage {
       this.kind = card.kind === 'Boost' ? 'Boost' : 'Curse';
       this.title = card.title;
       this.description = card.description;
+      this.durationMinutes = card.durationMinutes;
     } catch (error: unknown) {
       this.error = problemMessage(error, 'Could not load that power card.');
     } finally {
@@ -79,7 +86,12 @@ export class PowerCardEditPage {
     this.saving = true;
     this.error = null;
     try {
-      const card = { kind: this.kind, title: this.title.trim(), description: this.description.trim() };
+      const card = {
+        kind: this.kind,
+        title: this.title.trim(),
+        description: this.description.trim(),
+        durationMinutes: this.kind === 'Curse' ? this.durationMinutes : null,
+      };
 
       await (this.editingId === null
         ? this.powerCards.create(card)

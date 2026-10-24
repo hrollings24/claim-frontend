@@ -77,6 +77,9 @@
           <ion-label class="ion-text-wrap">
             <h2>{{ card.title }}</h2>
             <p>{{ card.description }}</p>
+            <p *ngIf="card.kind === 'Curse'" class="muted">
+              {{ card.durationMinutes ? card.durationMinutes + ' minutes' : 'Until cleared' }}
+            </p>
           </ion-label>
           <ion-badge slot="end" [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
         </ion-item>

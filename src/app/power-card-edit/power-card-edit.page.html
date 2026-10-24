@@ -48,7 +48,26 @@
         [(ngModel)]="description"
       ></ion-textarea>
     </ion-item>
+
+    <ion-item *ngIf="kind === 'Curse'">
+      <ion-select
+        label="How long it lasts"
+        labelPlacement="stacked"
+        interface="popover"
+        [(ngModel)]="durationMinutes"
+      >
+        <ion-select-option [value]="null">Until they mark it cleared</ion-select-option>
+        <ion-select-option *ngFor="let minutes of durationOptions" [value]="minutes">
+          {{ minutes }} minutes
+        </ion-select-option>
+      </ion-select>
+    </ion-item>
   </ion-list>
+
+  <p class="hint" *ngIf="kind === 'Curse'">
+    A timed curse lifts on its own. One without a time — "before your next claim, eat a meal
+    deal" — stays on the cursed team until they mark it done.
+  </p>
 
   <p class="hint">
     New cards start at zero in every deck — add copies to a deck under Power cards › Decks.

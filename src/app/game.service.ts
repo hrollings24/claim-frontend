@@ -41,8 +41,11 @@ export interface HandCard {
   powerDraws: number;
 }
 
-/** Steal is built in; Curse (played on another team) and Boost (on yourself) are written by players. */
-export type PowerKind = 'Steal' | 'Curse' | 'Boost';
+/**
+ * Steal, Veto and Reverse (Curse Reverse) are built in. Curse (cast on another team) and Boost
+ * (played on yourself) are written by players.
+ */
+export type PowerKind = 'Steal' | 'Curse' | 'Boost' | 'Veto' | 'Reverse';
 
 /** One colour per kind, used everywhere a power card shows its kind. */
 export function powerKindColor(kind: PowerKind): string {
@@ -51,12 +54,15 @@ export function powerKindColor(kind: PowerKind): string {
       return 'danger';
     case 'Boost':
       return 'success';
+    case 'Veto':
+    case 'Reverse':
+      return 'tertiary';
     default:
       return 'warning';
   }
 }
 
-export type StealOutcome = 'Succeeded' | 'Failed' | 'TimedOut';
+export type StealOutcome = 'Succeeded' | 'Failed' | 'TimedOut' | 'Vetoed';
 
 /** The challenge a played Steal revealed, and its clock. */
 export interface StealAttempt {
@@ -76,8 +82,39 @@ export interface PowerCard {
   kind: PowerKind;
   title: string;
   description: string;
+  /** Curse only; null lasts until the cursed team clears it. */
+  durationMinutes: number | null;
   playedAt: string | null;
+  /** What it was played on — a team, a borough, a curse. */
+  playedOn: string | null;
   steal: StealAttempt | null;
+}
+
+/** An active curse your team cast or is under. */
+export interface Curse {
+  id: string;
+  title: string;
+  description: string;
+  fromTeamName: string;
+  targetTeamName: string;
+  /** True when it's on your team, false when your team cast it. */
+  onYou: boolean;
+  startedAt: string;
+  /** Null for one that lasts until the cursed team clears it. */
+  endsAt: string | null;
+  /** Sent back by Curse Reverse — can be vetoed, not reversed again. */
+  isReversal: boolean;
+}
+
+/** A steal running against one of your boroughs — what a Veto can stop. */
+export interface IncomingSteal {
+  id: string;
+  boroughId: string;
+  boroughName: string;
+  fromTeamName: string;
+  title: string;
+  summary: string;
+  expiresAt: string;
 }
 
 /** Cards drawn and waiting for the team to keep up to `keep` of them; the rest are discarded. */
@@ -104,6 +141,8 @@ export interface GameBoard {
   yourHand: HandCard[];
   yourPowers: PowerCard[];
   yourPowerOffers: PowerOffer[];
+  activeCurses: Curse[];
+  incomingSteals: IncomingSteal[];
   /** Unplayed power cards a team may hold at once. */
   maxPowerCards: number;
   /** Left to draw before the discard pile is shuffled back in. */
@@ -120,6 +159,9 @@ export interface Game {
   yourTeamId: string | null;
   durationMinutes: number;
   hotRotationMinutes: number;
+  /** Boroughs on the board, picked by the host. Null leaves it to the game: `defaultBoardSize`. */
+  boardSize: number | null;
+  defaultBoardSize: number;
   /** Picked by the host in the lobby; a game can't start without one. */
   powerConfigurationId: string | null;
   powerConfigurationName: string | null;
@@ -205,14 +247,46 @@ export class GameService {
   }
 
   /**
-   * Plays a power card. A Steal needs a target borough: its challenge is revealed and the clock
-   * starts from this moment, with no way back.
+   * Plays a power card. A Steal needs a target borough — its challenge is revealed and the clock
+   * starts from this moment, with no way back. A curse needs a target team.
    */
-  playPower(code: string, cardId: string, boroughId: string | null = null): Promise<Game> {
+  playPower(
+    code: string,
+    cardId: string,
+    target: { boroughId?: string; targetTeamId?: string } = {},
+  ): Promise<Game> {
     return this.api.post<Game>(
       `/api/games/${encodeURIComponent(code)}/powers/${encodeURIComponent(cardId)}/play`,
-      { boroughId },
+      target,
     );
+  }
+
+  /** Uses a Veto or Curse Reverse on a curse aimed at your team. */
+  respondToCurse(code: string, curseId: string, cardId: string): Promise<Game> {
+    return this.api.post<Game>(
+      `/api/games/${encodeURIComponent(code)}/curses/${encodeURIComponent(curseId)}/respond`,
+      { cardId },
+    );
+  }
+
+  /** Marks a curse with no time on it as done. */
+  clearCurse(code: string, curseId: string): Promise<Game> {
+    return this.api.post<Game>(
+      `/api/games/${encodeURIComponent(code)}/curses/${encodeURIComponent(curseId)}/clear`,
+    );
+  }
+
+  /** Uses a Veto on a steal running against one of your boroughs. */
+  vetoSteal(code: string, stealId: string, cardId: string): Promise<Game> {
+    return this.api.post<Game>(
+      `/api/games/${encodeURIComponent(code)}/steals/${encodeURIComponent(stealId)}/veto`,
+      { cardId },
+    );
+  }
+
+  /** Null hands it back to the game's default for the number of teams. */
+  setBoardSize(code: string, boardSize: number | null): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/board-size`, { boardSize });
   }
 
   /** Reports whether a running steal came off. Refused once its clock has run out. */
