@@ -37,10 +37,15 @@
       </ion-item>
       <div class="body ion-padding" slot="content">
         <p>
-          A handful of boroughs are on offer at any moment, drawn from London's {{ boroughCount }} —
-          <span class="key">four more than there are teams</span> unless the host picks a number
-          ({{ minBoard }}–{{ maxBoard }}). Everything on the board is unclaimed — claiming one
-          takes it off the board and into your territory, and another borough takes its place.
+          A handful of boroughs are on offer at any moment, drawn from London's {{ boroughCount }}.
+          Everything on the board is unclaimed — claiming one takes it off the board and into your
+          territory, and another borough takes its place.
+        </p>
+        <p>
+          <span class="key">Board size</span> is set by the host in the lobby, under "Boroughs on
+          the board". Left on Automatic it's four more than there are teams — 6 for two teams, 7
+          for three — or the host can pick anything from {{ minBoard }} to {{ maxBoard }}. A
+          bigger board means more choice and less racing for the same borough.
         </p>
         <p>
           A replacement can be any borough that isn't already on the board or held by someone —
