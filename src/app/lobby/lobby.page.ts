@@ -79,7 +79,7 @@ export class LobbyPage {
   /** Boroughs on the board. Null leaves it to the game, which fits it to the number of teams. */
   boardSize: number | null = null;
 
-  readonly boardSizeOptions = [4, 5, 6, 7, 8, 9, 10];
+  readonly boardSizeOptions = Array.from({ length: 13 }, (_, index) => index + 4);
 
   private boardSizeLoaded = false;
 

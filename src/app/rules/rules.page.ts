@@ -12,7 +12,7 @@ export class RulesPage {
    * page states them once rather than repeating them through the prose.
    */
   readonly minBoard = 4;
-  readonly maxBoard = 10;
+  readonly maxBoard = 16;
   readonly handSize = 5;
   readonly hotBonus = 1;
   /** The default — the host can set a different rotation time per game in the lobby. */
