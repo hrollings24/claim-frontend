@@ -5,6 +5,12 @@
     </ion-buttons>
 
     <ion-title>{{ pageTitle }}</ion-title>
+
+    <!-- Once the game is under way the code is only needed now and then — someone rejoining —
+         so it moves out of the way, up here. -->
+    <ion-buttons slot="end" *ngIf="game?.board">
+      <ion-chip class="code-chip" outline="true">{{ game?.code }}</ion-chip>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -21,16 +27,18 @@
   </div>
 
   <ng-container *ngIf="game as currentGame">
-    <div class="code-panel ion-text-center">
+    <div class="code-panel ion-text-center" *ngIf="!currentGame.board">
       <p class="code-label">Game code</p>
       <h1 class="code">{{ currentGame.code }}</h1>
       <p class="code-hint">Share this code for others to join</p>
     </div>
 
     <ion-list [inset]="true">
-      <ion-list-header>
+      <ion-list-header class="toggle" (click)="toggle('players')">
+        <ion-icon class="chevron" [name]="isCollapsed('players') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
         <ion-label>Players ({{ currentGame.players.length }})</ion-label>
       </ion-list-header>
+      <ng-container *ngIf="!isCollapsed('players')">
 
       <ion-item *ngFor="let player of currentGame.players">
         <ion-label class="ion-text-wrap">
@@ -39,7 +47,8 @@
         </ion-label>
         <ion-badge slot="end" *ngIf="player.isHost">Host</ion-badge>
       </ion-item>
-    </ion-list>
+    </ng-container>
+        </ion-list>
 
     <ion-list [inset]="true" *ngIf="!currentGame.board">
       <ion-list-header>
@@ -218,10 +227,12 @@
     </ion-list>
 
     <ion-list [inset]="true" *ngIf="!currentGame.board">
-      <ion-list-header>
+      <ion-list-header class="toggle" (click)="toggle('powers')">
+        <ion-icon class="chevron" [name]="isCollapsed('powers') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
         <ion-label>Power cards</ion-label>
         <ion-button size="small" fill="clear" (click)="openPowerCards()">Manage</ion-button>
       </ion-list-header>
+      <ng-container *ngIf="!isCollapsed('powers')">
 
       <!-- Same rule as the other settings: the host picks, everyone else sees the choice. -->
       <ion-item *ngIf="currentGame.youAreHost && powerConfigurations.length > 0">
@@ -253,14 +264,17 @@
           {{ describePowerConfiguration(configuration) }}
         </ion-label>
       </ion-item>
-    </ion-list>
+    </ng-container>
+        </ion-list>
 
     <ng-container *ngIf="currentGame.status !== 'Lobby' && board as currentBoard">
       <ion-list [inset]="true">
-        <ion-list-header>
+        <ion-list-header class="toggle" (click)="toggle('scores')">
+          <ion-icon class="chevron" [name]="isCollapsed('scores') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
           <ion-label>Scores</ion-label>
           <ion-note slot="end">{{ timeRemaining() }}</ion-note>
         </ion-list-header>
+        <ng-container *ngIf="!isCollapsed('scores')">
 
         <ion-item button *ngFor="let score of currentBoard.scores" (click)="showTeamBoroughs(score)">
           <span slot="start" class="swatch" [style.background]="colorOfTeamId(score.teamId)"></span>
@@ -270,12 +284,23 @@
           </ion-label>
           <ion-badge slot="end">{{ score.score }}</ion-badge>
         </ion-item>
-      </ion-list>
+      </ng-container>
+        </ion-list>
 
-      <ion-list-header class="map-header">
+      <ion-list-header class="map-header toggle" (click)="toggle('map')">
+        <ion-icon class="chevron" [name]="isCollapsed('map') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
         <ion-label>Map</ion-label>
       </ion-list-header>
-      <app-borough-map [board]="currentBoard" [teams]="currentGame.teams" [yourTeamId]="currentGame.yourTeamId"></app-borough-map>
+      <ng-container *ngIf="!isCollapsed('map')">
+        <p *ngIf="currentGame.status === 'InProgress' && hotName" class="hot-line">
+          <strong>{{ hotName }}</strong> is hot — {{ hotCountdown() | lowercase }}
+        </p>
+        <app-borough-map
+          [board]="currentBoard"
+          [teams]="currentGame.teams"
+          [yourTeamId]="currentGame.yourTeamId"
+        ></app-borough-map>
+      </ng-container>
 
       <div *ngIf="currentGame.status === 'Finished'" class="ion-text-center ion-padding-vertical">
         <h2>Time's up</h2>
@@ -325,51 +350,21 @@
           </div>
         </div>
 
-        <!-- A Swap has been committed: their cards are on show until one is taken. -->
+        <!-- A Swap has been committed but not finished: their cards wait on the swap page. -->
         <div *ngFor="let swap of pendingSwaps" class="alert-card swap-open">
           <p class="alert-label">Swapping with {{ swap.teamName }}</p>
-
-          <ng-container *ngIf="swap.theirCards.length > 0; else nothingToTake">
-            <p class="small">Take one of theirs:</p>
-            <ion-radio-group [(ngModel)]="swapTake[swap.cardId]">
-              <ion-item *ngFor="let card of swap.theirCards" lines="none">
-                <ion-radio [value]="card.id" justify="space-between">
-                  <ion-label class="ion-text-wrap">
-                    {{ card.title }}
-                    <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
-                    <p>{{ card.description }}</p>
-                  </ion-label>
-                </ion-radio>
-              </ion-item>
-            </ion-radio-group>
-          </ng-container>
-          <ng-template #nothingToTake>
-            <p class="muted small">They've no cards left to take.</p>
-          </ng-template>
-
-          <ng-container *ngIf="unplayedPowers.length > 0; else nothingToGive">
-            <p class="small">Give them one of yours:</p>
-            <ion-radio-group [(ngModel)]="swapGive[swap.cardId]">
-              <ion-item *ngFor="let card of unplayedPowers" lines="none">
-                <ion-radio [value]="card.id" justify="space-between">
-                  <ion-label class="ion-text-wrap">{{ card.title }}</ion-label>
-                </ion-radio>
-              </ion-item>
-            </ion-radio-group>
-          </ng-container>
-          <ng-template #nothingToGive>
-            <p class="muted small">You've nothing to give, so you just take one.</p>
-          </ng-template>
-
-          <ion-button expand="block" color="tertiary" [disabled]="busy || !canCompleteSwap(swap)" (click)="completeSwap(swap)">
-            Swap
+          <p>Their cards are revealed — take one, and give one back.</p>
+          <ion-button expand="block" color="tertiary" [disabled]="busy" (click)="openSwapSheet(swap)">
+            Choose cards
           </ion-button>
         </div>
 
         <ion-list [inset]="true" *ngIf="cursesYouCast.length > 0">
-          <ion-list-header>
+          <ion-list-header class="toggle" (click)="toggle('curses')">
+            <ion-icon class="chevron" [name]="isCollapsed('curses') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
             <ion-label>Your curses in play</ion-label>
           </ion-list-header>
+          <ng-container *ngIf="!isCollapsed('curses')">
 
           <ion-item *ngFor="let curse of cursesYouCast">
             <ion-label class="ion-text-wrap">
@@ -377,6 +372,7 @@
               <p>On {{ curse.targetTeamName }} · {{ curse.endsAt ? countdownTo(curse.endsAt) : 'until they clear it' }}</p>
             </ion-label>
           </ion-item>
+        </ng-container>
         </ion-list>
 
         <!-- Draws waiting to be made: a steal that failed on you, or a claim left for later. Each
@@ -400,14 +396,15 @@
         </div>
 
         <ion-list [inset]="true">
-          <ion-list-header>
+          <ion-list-header class="toggle" (click)="toggle('hand')">
+            <ion-icon class="chevron" [name]="isCollapsed('hand') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
             <ion-label>Your hand</ion-label>
           </ion-list-header>
+          <ng-container *ngIf="!isCollapsed('hand')">
 
           <ion-item
             button
             *ngFor="let card of currentBoard.yourHand"
-            [class.picked]="selectedCard?.id === card.id"
             [disabled]="busy"
             (click)="viewCardDetails(card)"
           >
@@ -423,6 +420,7 @@
               You're not on a team, so you have no hand.
             </ion-label>
           </ion-item>
+        </ng-container>
         </ion-list>
 
         <ion-list [inset]="true" *ngIf="currentGame.yourTeamId">
@@ -434,7 +432,6 @@
           <ion-item
             button
             *ngFor="let card of unplayedPowers"
-            [class.picked]="selectedSteal?.id === card.id"
             [disabled]="busy"
             (click)="viewPowerDetails(card)"
           >
@@ -460,9 +457,11 @@
 
         <!-- Out of the hand, but kept so the team can see what it has used and how it went. -->
         <ion-list [inset]="true" *ngIf="playedPowers.length > 0">
-          <ion-list-header>
+          <ion-list-header class="toggle" (click)="toggle('played')">
+            <ion-icon class="chevron" [name]="isCollapsed('played') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
             <ion-label>Played</ion-label>
           </ion-list-header>
+          <ng-container *ngIf="!isCollapsed('played')">
 
           <ion-item *ngFor="let card of playedPowers">
             <ion-label class="ion-text-wrap">
@@ -474,6 +473,7 @@
             </ion-label>
             <ion-badge slot="end" [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
           </ion-item>
+        </ng-container>
         </ion-list>
 
         <!-- After a claim: the celebration, then the cards it drew — revealed on a tap, picked,
@@ -566,6 +566,155 @@
           </ng-template>
         </ion-modal>
 
+        <!-- Choosing where to play a card, on a page of its own: the boroughs on the board for a
+             claim, other teams' boroughs for a Steal. Tapping one asks to confirm. -->
+        <ion-modal [isOpen]="picker !== null" (didDismiss)="closePicker()">
+          <ng-template>
+            <ng-container *ngIf="picker as choosing">
+              <ion-header>
+                <ion-toolbar>
+                  <ion-title>
+                    {{ choosing.kind === 'claim' ? 'Where did you do it?' : choosing.kind === 'steal' ? 'Steal which borough?' : 'Swap with which team?' }}
+                  </ion-title>
+                  <ion-buttons slot="end">
+                    <ion-button (click)="closePicker()">Cancel</ion-button>
+                  </ion-buttons>
+                </ion-toolbar>
+              </ion-header>
+
+              <ion-content class="ion-padding picker">
+                <div class="picker-card" [class.steal]="choosing.kind === 'steal'" [class.swap]="choosing.kind === 'swap'">
+                  <p class="picker-kind">{{ choosing.kind === 'claim' ? 'Claim challenge' : choosing.card.title }}</p>
+                  <h2>{{ choosing.card.title }}</h2>
+                  <p>{{ choosing.kind === 'claim' ? $any(choosing.card).summary : $any(choosing.card).description }}</p>
+                </div>
+
+                <ng-container *ngIf="choosing.kind === 'swap'">
+                  <p class="picker-prompt">
+                    Pick a team. Their power cards are revealed to you — then take one and give one of yours.
+                  </p>
+                  <ion-list class="picker-list">
+                    <ion-item *ngFor="let team of otherTeams" button detail [disabled]="busy" (click)="swapWith(team)">
+                      <span slot="start" class="swatch" [style.background]="colorOf(team)"></span>
+                      <ion-label>{{ team.name }}</ion-label>
+                    </ion-item>
+                  </ion-list>
+                </ng-container>
+
+                <ng-container *ngIf="choosing.kind === 'claim'">
+                  <p class="picker-prompt">Pick the borough you completed it in.</p>
+                  <ion-list class="picker-list">
+                    <ion-item *ngFor="let borough of currentBoard.active" button detail [disabled]="busy" (click)="playAt(borough.id, borough.name)">
+                      <ion-label class="ion-text-wrap">
+                        {{ borough.name }}
+                        <p>{{ borough.zone }} London</p>
+                        <p *ngIf="borough.isHot" class="hot-timer">{{ hotCountdown() }}</p>
+                      </ion-label>
+                      <ion-badge slot="end" color="danger" *ngIf="borough.isHot">HOT · 2× power</ion-badge>
+                    </ion-item>
+                  </ion-list>
+                </ng-container>
+
+                <ng-container *ngIf="choosing.kind === 'steal'">
+                  <p class="picker-prompt">
+                    Pick the borough to go for. The steal challenge is revealed, and its clock starts, as soon as
+                    you confirm.
+                  </p>
+                  <ion-list class="picker-list" *ngIf="stealTargets.length > 0; else nothingToSteal">
+                    <ion-item
+                      *ngFor="let territory of stealTargets"
+                      [button]="!territory.isFortified"
+                      [detail]="!territory.isFortified"
+                      [disabled]="busy || territory.isFortified"
+                      (click)="stealAt(territory)"
+                    >
+                      <span slot="start" class="swatch" [style.background]="colorOfTeamId(territory.teamId)"></span>
+                      <ion-label class="ion-text-wrap">
+                        {{ territory.name }}
+                        <p>{{ territory.teamName }}</p>
+                      </ion-label>
+                      <ion-badge slot="end" color="tertiary" *ngIf="territory.isFortified">Fortified</ion-badge>
+                    </ion-item>
+                  </ion-list>
+                  <ng-template #nothingToSteal>
+                    <p class="picker-prompt">No other team holds a borough yet — there's nothing to steal.</p>
+                  </ng-template>
+                </ng-container>
+              </ion-content>
+            </ng-container>
+          </ng-template>
+        </ion-modal>
+
+        <!-- A committed Swap: their cards on one side to take from, yours on the other to give. -->
+        <ion-modal [isOpen]="swapSheet !== null" (didDismiss)="closeSwapSheet()">
+          <ng-template>
+            <ng-container *ngIf="openSwap as swap">
+              <ion-header>
+                <ion-toolbar>
+                  <ion-title>Swap with {{ swap.teamName }}</ion-title>
+                  <ion-buttons slot="end">
+                    <ion-button (click)="closeSwapSheet()">Later</ion-button>
+                  </ion-buttons>
+                </ion-toolbar>
+              </ion-header>
+
+              <ion-content class="ion-padding picker">
+                <p class="picker-prompt">Take one of their cards</p>
+                <ion-list class="picker-list" *ngIf="swap.theirCards.length > 0; else nothingToTake">
+                  <ion-item
+                    *ngFor="let card of swap.theirCards"
+                    button
+                    detail="false"
+                    [class.chosen]="swapTake[swap.cardId] === card.id"
+                    (click)="pickTake(swap, card)"
+                  >
+                    <ion-label class="ion-text-wrap">
+                      {{ card.title }}
+                      <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
+                      <p>{{ card.description }}</p>
+                    </ion-label>
+                    <ion-icon slot="end" name="checkmark-circle" color="tertiary" *ngIf="swapTake[swap.cardId] === card.id"></ion-icon>
+                  </ion-item>
+                </ion-list>
+                <ng-template #nothingToTake>
+                  <p class="picker-empty">They've no cards left to take.</p>
+                </ng-template>
+
+                <p class="picker-prompt">Give them one of yours</p>
+                <ion-list class="picker-list" *ngIf="unplayedPowers.length > 0; else nothingToGive">
+                  <ion-item
+                    *ngFor="let card of unplayedPowers"
+                    button
+                    detail="false"
+                    [class.chosen]="swapGive[swap.cardId] === card.id"
+                    (click)="pickGive(swap, card)"
+                  >
+                    <ion-label class="ion-text-wrap">
+                      {{ card.title }}
+                      <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
+                    </ion-label>
+                    <ion-icon slot="end" name="checkmark-circle" color="tertiary" *ngIf="swapGive[swap.cardId] === card.id"></ion-icon>
+                  </ion-item>
+                </ion-list>
+                <ng-template #nothingToGive>
+                  <p class="picker-empty">You've nothing to give, so you just take one.</p>
+                </ng-template>
+
+                <ion-button
+                  expand="block"
+                  size="large"
+                  color="tertiary"
+                  class="ion-margin-top"
+                  [disabled]="busy || !canCompleteSwap(swap)"
+                  (click)="completeSwap(swap)"
+                >
+                  Swap
+                </ion-button>
+              </ion-content>
+            </ng-container>
+          </ng-template>
+        </ion-modal>
+
         <ion-modal [isOpen]="detailsCard !== null" (didDismiss)="closeCardDetails()">
           <ng-template>
             <ng-container *ngIf="detailsCard as card">
@@ -588,7 +737,7 @@
                 <ion-toolbar>
                   <div class="details-footer">
                     <ion-button expand="block" [disabled]="busy" (click)="playFromDetails()">
-                      {{ selectedCard?.id === card.id ? 'Stop playing this' : 'Play this challenge' }}
+                      Play this challenge
                     </ion-button>
                   </div>
                 </ion-toolbar>
@@ -639,7 +788,7 @@
                       (click)="playPowerFromDetails()"
                     >
                       {{ card.kind === 'Steal'
-                         ? (selectedSteal?.id === card.id ? 'Stop picking a target' : 'Pick a borough to steal')
+                         ? 'Pick a borough to steal'
                          : card.kind === 'Fortify' ? 'Pick a borough to fortify'
                          : card.kind === 'Swap' ? 'Pick a team to swap with'
                          : (card.kind === 'Boost' ? 'Play this boost' : 'Play this curse') }}
@@ -654,50 +803,39 @@
           </ng-template>
         </ion-modal>
 
-        <p class="hint ion-text-center" *ngIf="selectedCard">
-          Pick where to play "{{ selectedCard.title }}".
-        </p>
-
-        <p class="hint ion-text-center" *ngIf="selectedSteal">
-          Pick a borough another team holds to steal.
-        </p>
-
         <ion-list [inset]="true">
-          <ion-list-header>
+          <ion-list-header class="toggle" (click)="toggle('board')">
+            <ion-icon class="chevron" [name]="isCollapsed('board') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
             <ion-label>On the board</ion-label>
           </ion-list-header>
+          <ng-container *ngIf="!isCollapsed('board')">
 
-          <ion-item
-            *ngFor="let borough of currentBoard.active"
-            [button]="canPlayOnActive(borough)"
-            [disabled]="busy"
-            (click)="canPlayOnActive(borough) ? playAt(borough.id, borough.name) : null"
-          >
+          <ion-item *ngFor="let borough of currentBoard.active">
             <ion-label class="ion-text-wrap">
               {{ borough.name }}
               <p>{{ borough.zone }} London</p>
+              <p *ngIf="borough.isHot" class="hot-timer">{{ hotCountdown() }}</p>
             </ion-label>
             <ion-badge slot="end" color="danger" *ngIf="borough.isHot">HOT · 2× power</ion-badge>
           </ion-item>
+        </ng-container>
         </ion-list>
 
         <ion-list [inset]="true" *ngIf="currentBoard.territories.length > 0">
-          <ion-list-header>
+          <ion-list-header class="toggle" (click)="toggle('held')">
+            <ion-icon class="chevron" [name]="isCollapsed('held') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
             <ion-label>Held boroughs</ion-label>
           </ion-list-header>
+          <ng-container *ngIf="!isCollapsed('held')">
 
-          <ion-item
-            *ngFor="let territory of currentBoard.territories"
-            [button]="canPlayOnTerritory(territory)"
-            [disabled]="busy"
-            (click)="canPlayOnTerritory(territory) ? stealAt(territory) : null"
-          >
+          <ion-item *ngFor="let territory of currentBoard.territories">
             <ion-label class="ion-text-wrap">
               {{ territory.name }}
               <p>{{ territory.teamName }}</p>
             </ion-label>
             <ion-badge slot="end" color="tertiary" *ngIf="territory.isFortified">Fortified</ion-badge>
           </ion-item>
+        </ng-container>
         </ion-list>
       </ng-container>
     </ng-container>

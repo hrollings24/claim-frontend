@@ -208,97 +208,9 @@
   padding-left: 1rem;
 }
 
-.celebration {
-  --background: var(--ion-background-color);
-}
-
-.celebration-body {
-  margin: 0 auto;
-  max-width: 28rem;
-  padding: 2.5rem 0.5rem 1rem;
-  text-align: center;
-
-  h1 {
-    font-size: 2rem;
-    font-weight: 800;
-    margin: 0.5rem 0 0.25rem;
-  }
-}
-
-.celebration-mark {
-  align-items: center;
-  background: var(--ion-color-success);
-  border-radius: 50%;
-  color: #fff;
-  display: inline-flex;
-  font-size: 2rem;
-  font-weight: 800;
-  height: 4.5rem;
-  justify-content: center;
-  margin: 0 auto;
-  width: 4.5rem;
-
-  &.hot {
-    background: #f97316;
-    font-size: 1.1rem;
-    letter-spacing: 0.08em;
-  }
-}
-
-.celebration-lead {
-  font-size: 1.15rem;
-  margin: 0 0 0.5rem;
-}
-
-.celebration-hot {
-  color: #f97316;
-  font-weight: 600;
-  margin: 0 0 0.5rem;
-}
-
-.celebration-draw {
-  font-size: 1.05rem;
-  margin: 1.5rem 0 1rem;
-}
-
-.celebration-note {
-  color: var(--ion-color-warning);
-  font-size: 0.9rem;
-}
-
-.drawn {
-  border-radius: 0.75rem;
-  margin: 0 0 1rem;
-  text-align: left;
-}
-
-.celebration-mark.held {
-  background: var(--ion-color-tertiary);
-  font-size: 1.1rem;
-  letter-spacing: 0.08em;
-}
-
-.celebration-pick {
-  color: var(--ion-color-medium);
-  font-size: 0.9rem;
-}
-
-// Each newly drawn card turns over into place.
-.drawn-card {
-  animation: draw-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
-  transform-origin: center left;
-}
-
-@keyframes draw-in {
-  from {
-    opacity: 0;
-    transform: perspective(600px) rotateY(-80deg) translateY(-0.5rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
+// The map isn't inside a list, so its header needs the same spacing a list gives the others.
+.map-header {
+  margin-top: 0.5rem;
 }
 
 .draw-waiting {
@@ -317,8 +229,56 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .drawn-card {
-    animation: none;
+
+// Ionic's inset lists and their headers come with generous gaps — fine on a settings screen,
+// wasteful on a game screen with a dozen sections. Pull them in.
+ion-list.list-inset {
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+ion-list-header {
+  min-height: 2.25rem;
+
+  ion-label {
+    margin-bottom: 0.35rem;
+    margin-top: 0.6rem;
+  }
+}
+
+// A section header folds its section away when tapped.
+ion-list-header.toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.chevron {
+  color: var(--ion-color-medium);
+  flex-shrink: 0;
+  font-size: 1rem;
+  margin: 0.6rem 0.4rem 0.35rem 0;
+}
+
+.code-chip {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-right: 0.5rem;
+}
+
+.hot-timer {
+  color: #f97316 !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.hot-line {
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  margin: 0 1rem 0.5rem;
+
+  strong {
+    color: #f97316;
   }
 }

@@ -2,7 +2,6 @@ import { Component, NgZone } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import {
-  ActiveBorough,
   Curse,
   Game,
   GamePlayer,
@@ -41,14 +40,25 @@ export class LobbyPage {
   error: string | null = null;
   busy = false;
 
-  /** The claim card the player has picked up, waiting for them to choose where to play it. */
-  selectedCard: HandCard | null = null;
-
   /** The hand card whose full details are open. Null means the modal is closed. */
   detailsCard: HandCard | null = null;
 
-  /** A Steal picked up and waiting for a target among the other teams' boroughs. */
-  selectedSteal: PowerCard | null = null;
+  /**
+   * Open while the player is choosing where to play a card: a claim challenge goes on a borough
+   * on the board, a Steal at one another team holds. A page of its own, so the choices are right
+   * there rather than somewhere down the game screen.
+   */
+  picker:
+    | { kind: 'claim'; card: HandCard }
+    | { kind: 'steal'; card: PowerCard }
+    | { kind: 'swap'; card: PowerCard }
+    | null = null;
+
+  /**
+   * The played Swap whose take-and-give page is open, by card id. Kept apart from the picker: the
+   * page outlives it, and reopens from the game screen if left for later.
+   */
+  swapSheet: string | null = null;
 
   /** The power card whose details are open. Null means that modal is closed. */
   detailsPower: PowerCard | null = null;
@@ -67,6 +77,14 @@ export class LobbyPage {
   readonly kindColor: (kind: PowerKind) => string = powerKindColor;
 
   readonly teamColors = TEAM_COLORS;
+
+  /**
+   * Which sections this player has folded away, by name. Remembered on this phone only — it's a
+   * matter of taste, not something the game needs to know.
+   */
+  private collapsed: Record<string, boolean> = LobbyPage.loadCollapsed();
+
+  private static readonly collapsedKey = 'lobby.collapsed';
 
   /** Game length as the two fields the lobby shows, kept whole in minutes on the server. */
   durationHours = 1;
@@ -89,6 +107,13 @@ export class LobbyPage {
 
   code = '';
   private pollHandle: ReturnType<typeof setInterval> | null = null;
+
+  /**
+   * Ticks once a second so countdowns — steals, curses, the hot borough — count down smoothly
+   * rather than in jumps each time the game is polled. It runs in Angular's zone, so each tick is
+   * a change detection pass and nothing more.
+   */
+  private tickHandle: ReturnType<typeof setInterval> | null = null;
   private refreshing = false;
 
   /**
@@ -117,11 +142,12 @@ export class LobbyPage {
     this.hotRotationLoaded = false;
     this.powerConfigurationLoaded = false;
     this.boardSizeLoaded = false;
-    this.selectedCard = null;
-    this.selectedSteal = null;
+    this.picker = null;
+    this.swapSheet = null;
     void this.refresh();
     void this.loadPowerConfigurations();
     this.pollHandle = setInterval(() => void this.refresh(), POLL_INTERVAL_MS);
+    this.tickHandle = setInterval(() => undefined, 1000);
   }
 
   ionViewWillLeave(): void {
@@ -202,14 +228,16 @@ export class LobbyPage {
     return (this.board?.territories ?? []).filter(t => t.teamId === this.game?.yourTeamId);
   }
 
-  /** A claim card goes on the open board, and nowhere else. */
-  canPlayOnActive(borough: ActiveBorough): boolean {
-    return this.selectedCard !== null && !!borough;
+  /** Where a Steal can go: any borough another team holds. Fortified ones are shown, but locked. */
+  get stealTargets(): Territory[] {
+    return this.opposingTerritories;
   }
 
-  /** A Steal goes at any borough another team holds, unless they fortified it. */
-  canPlayOnTerritory(territory: Territory): boolean {
-    return this.selectedSteal !== null && territory.teamId !== this.game?.yourTeamId && !territory.isFortified;
+  /** Same zone caveat as {@link closeCardDetails}. */
+  closePicker(): void {
+    this.zone.run(() => {
+      this.picker = null;
+    });
   }
 
   viewCardDetails(card: HandCard): void {
@@ -227,13 +255,12 @@ export class LobbyPage {
     });
   }
 
-  /** Picks up the card whose details are open, ready to be played at a borough. */
+  /** Opens the borough picker for the card whose details are open. */
   playFromDetails(): void {
     const card = this.detailsCard;
     this.zone.run(() => {
-      this.selectedCard = this.selectedCard?.id === card?.id ? null : card;
-      this.selectedSteal = null;
       this.detailsCard = null;
+      this.picker = card ? { kind: 'claim', card } : null;
     });
   }
 
@@ -253,18 +280,24 @@ export class LobbyPage {
    * the only question is whether you meant to tap this borough.
    */
   async playAt(boroughId: string, boroughName: string): Promise<void> {
-    const card = this.selectedCard;
-    if (!card) {
+    if (this.picker?.kind !== 'claim') {
       return;
     }
 
+    const card = this.picker.card;
     const alert = await this.alerts.create({
       header: `Claim ${boroughName}?`,
       subHeader: card.title,
       message: 'Only once you\'ve completed the challenge.',
       buttons: [
         { text: 'Cancel', role: 'cancel' },
-        { text: 'Done it', handler: () => void this.submitPlay(card, boroughId) },
+        {
+          text: 'Done it',
+          handler: () => {
+            this.closePicker();
+            void this.submitPlay(card, boroughId);
+          },
+        },
       ],
     });
 
@@ -277,8 +310,6 @@ export class LobbyPage {
    * there before.
    */
   private async submitPlay(card: HandCard, boroughId: string): Promise<void> {
-    this.selectedCard = null;
-
     const boroughName = this.board?.active.find(b => b.id === boroughId)?.name ?? 'the borough';
     const wasHot = this.board?.hotBoroughId === boroughId;
     const offersBefore = new Set((this.board?.yourPowerOffers ?? []).map(offer => offer.id));
@@ -452,7 +483,7 @@ export class LobbyPage {
   }
 
   /**
-   * A Steal is picked up and waits for a target; a curse or boost is played on the spot, after a
+   * A Steal opens the picker for its target; a curse or boost is played on the spot, after a
    * check, since there's no taking it back.
    */
   async playPowerFromDetails(): Promise<void> {
@@ -463,16 +494,22 @@ export class LobbyPage {
 
     if (card.kind === 'Steal') {
       this.zone.run(() => {
-        this.selectedSteal = this.selectedSteal?.id === card.id ? null : card;
-        this.selectedCard = null;
         this.detailsPower = null;
+        this.picker = { kind: 'steal', card };
       });
       return;
     }
 
     this.closePowerDetails();
 
-    if (card.kind === 'Curse' || card.kind === 'Swap') {
+    if (card.kind === 'Swap') {
+      this.zone.run(() => {
+        this.picker = { kind: 'swap', card };
+      });
+      return;
+    }
+
+    if (card.kind === 'Curse') {
       await this.pickTeamFor(card);
       return;
     }
@@ -500,13 +537,10 @@ export class LobbyPage {
    */
   private async pickTeamFor(card: PowerCard): Promise<void> {
     const others = (this.game?.teams ?? []).filter(team => team.id !== this.game?.yourTeamId);
-    const isSwap = card.kind === 'Swap';
 
     const alert = await this.alerts.create({
-      header: isSwap ? 'Swap with which team?' : `Who gets ${card.title}?`,
-      subHeader: isSwap
-        ? "You'll see their power cards, then pick one to take and one to give."
-        : card.durationMinutes ? `For ${card.durationMinutes} minutes` : 'Until they mark it cleared',
+      header: `Who gets ${card.title}?`,
+      subHeader: card.durationMinutes ? `For ${card.durationMinutes} minutes` : 'Until they mark it cleared',
       inputs: others.map((team, index) => ({
         type: 'radio' as const,
         label: team.name,
@@ -516,7 +550,7 @@ export class LobbyPage {
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {
-          text: isSwap ? 'See their cards' : 'Curse them',
+          text: 'Curse them',
           handler: (teamId: string) =>
             void this.act(() => this.gameService.playPower(this.code, card.id, { targetTeamId: teamId })),
         },
@@ -589,10 +623,11 @@ export class LobbyPage {
 
   /** Committing a steal reveals the challenge and starts the clock, so it asks first. */
   async stealAt(territory: Territory): Promise<void> {
-    const card = this.selectedSteal;
-    if (!card) {
+    if (this.picker?.kind !== 'steal' || territory.isFortified) {
       return;
     }
+
+    const card = this.picker.card;
 
     const alert = await this.alerts.create({
       header: `Steal ${territory.name}?`,
@@ -603,7 +638,7 @@ export class LobbyPage {
         {
           text: 'Steal it',
           handler: () => {
-            this.selectedSteal = null;
+            this.closePicker();
             void this.act(() => this.gameService.playPower(this.code, card.id, { boroughId: territory.id }));
           },
         },
@@ -633,6 +668,39 @@ export class LobbyPage {
     const seconds = totalSeconds % 60;
 
     return `${minutes}:${seconds.toString().padStart(2, '0')} left`;
+  }
+
+  /** The hot borough's name, for the line under the map. */
+  get hotName(): string | null {
+    const board = this.board;
+    return board?.active.find(b => b.id === board.hotBoroughId)?.name ?? null;
+  }
+
+  /**
+   * How long until the hot borough moves on its own — it also moves the moment it's claimed.
+   * Minutes and seconds inside the last hour, hours and minutes before that. At zero it moves
+   * on the next refresh, within a few seconds.
+   */
+  hotCountdown(): string {
+    const rotatesAt = this.board?.hotRotatesAt;
+    if (!rotatesAt || !this.board?.hotBoroughId) {
+      return '';
+    }
+
+    const remainingMs = new Date(rotatesAt).getTime() - Date.now();
+    if (remainingMs <= 0) {
+      return 'Moving now…';
+    }
+
+    const totalSeconds = Math.ceil(remainingMs / 1000);
+    if (totalSeconds >= 3600) {
+      return `Moves in ${this.formatDuration(Math.ceil(totalSeconds / 60))}`;
+    }
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `Moves in ${minutes}:${seconds.toString().padStart(2, '0')}`;
   }
 
   // ---- Curses and the cards that answer them ----
@@ -694,6 +762,73 @@ export class LobbyPage {
   swapTake: Record<string, string> = {};
   swapGive: Record<string, string> = {};
 
+  /** The other teams, for picking who to swap with. */
+  get otherTeams(): GameTeam[] {
+    return (this.game?.teams ?? []).filter(team => team.id !== this.game?.yourTeamId);
+  }
+
+  /**
+   * Committing a Swap reveals their cards and uses the Swap up, so it asks first — then opens the
+   * take-and-give page straight away.
+   */
+  async swapWith(team: GameTeam): Promise<void> {
+    if (this.picker?.kind !== 'swap') {
+      return;
+    }
+
+    const card = this.picker.card;
+    const alert = await this.alerts.create({
+      header: `Swap with ${team.name}?`,
+      message: "Their power cards are revealed to you, and your Swap is used. You'll take one and give one back.",
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'See their cards',
+          handler: () => {
+            this.closePicker();
+            void this.zone.run(async () => {
+              await this.act(() => this.gameService.playPower(this.code, card.id, { targetTeamId: team.id }));
+              if (this.pendingSwaps.some(s => s.cardId === card.id)) {
+                this.swapSheet = card.id;
+              }
+            });
+          },
+        },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  get openSwap(): PendingSwap | null {
+    return this.pendingSwaps.find(s => s.cardId === this.swapSheet) ?? null;
+  }
+
+  /** From the pending swap's card on the game screen. */
+  openSwapSheet(swap: PendingSwap): void {
+    this.swapSheet = swap.cardId;
+  }
+
+  /** The swap stays open on the game screen, so leaving now loses nothing. */
+  closeSwapSheet(): void {
+    this.zone.run(() => {
+      this.swapSheet = null;
+    });
+  }
+
+  /** Taps on the page go through the zone — Ionic moves modals out of the page. */
+  pickTake(swap: PendingSwap, card: PowerCard): void {
+    this.zone.run(() => {
+      this.swapTake = { ...this.swapTake, [swap.cardId]: card.id };
+    });
+  }
+
+  pickGive(swap: PendingSwap, card: PowerCard): void {
+    this.zone.run(() => {
+      this.swapGive = { ...this.swapGive, [swap.cardId]: card.id };
+    });
+  }
+
   /** Each side must be picked whenever that side has anything to pick from. */
   canCompleteSwap(swap: PendingSwap): boolean {
     const needsTake = swap.theirCards.length > 0;
@@ -703,12 +838,15 @@ export class LobbyPage {
   }
 
   completeSwap(swap: PendingSwap): Promise<void> {
-    const take = this.swapTake[swap.cardId] ?? null;
-    const give = this.swapGive[swap.cardId] ?? null;
-    delete this.swapTake[swap.cardId];
-    delete this.swapGive[swap.cardId];
+    return this.zone.run(async () => {
+      const take = this.swapTake[swap.cardId] ?? null;
+      const give = this.swapGive[swap.cardId] ?? null;
+      delete this.swapTake[swap.cardId];
+      delete this.swapGive[swap.cardId];
 
-    return this.act(() => this.gameService.completeSwap(this.code, swap.cardId, take, give));
+      await this.act(() => this.gameService.completeSwap(this.code, swap.cardId, take, give));
+      this.swapSheet = null;
+    });
   }
 
   stealOutcomeLabel(outcome: StealOutcome | null): string {
@@ -799,6 +937,33 @@ export class LobbyPage {
 
   get yourTeamColorId(): string | null {
     return this.game?.teams.find(t => t.id === this.game?.yourTeamId)?.color ?? null;
+  }
+
+  /**
+   * Players starts folded once the game is under way — the roster is settled by then — and
+   * everything else open, until this player says otherwise.
+   */
+  isCollapsed(section: string): boolean {
+    return this.collapsed[section] ?? (section === 'players' && !!this.game?.board);
+  }
+
+  toggle(section: string): void {
+    this.collapsed = { ...this.collapsed, [section]: !this.isCollapsed(section) };
+
+    try {
+      localStorage.setItem(LobbyPage.collapsedKey, JSON.stringify(this.collapsed));
+    } catch {
+      // Private browsing or blocked storage: it still folds, just isn't remembered.
+    }
+  }
+
+  private static loadCollapsed(): Record<string, boolean> {
+    try {
+      const stored = JSON.parse(localStorage.getItem(LobbyPage.collapsedKey) ?? '{}');
+      return stored && typeof stored === 'object' ? stored : {};
+    } catch {
+      return {};
+    }
   }
 
   colorOf(team: GameTeam): string {
@@ -917,6 +1082,11 @@ export class LobbyPage {
       this.powerConfigurationLoaded = true;
     }
 
+    // Finished from a teammate's phone while this one still had the swap page open.
+    if (this.swapSheet && !(game.board?.yourSwaps ?? []).some(s => s.cardId === this.swapSheet)) {
+      this.swapSheet = null;
+    }
+
     // Chosen from a teammate's phone while this one was still on the congratulations page.
     if (this.celebration?.offerId && !(game.board?.yourPowerOffers ?? []).some(o => o.id === this.celebration?.offerId)) {
       this.celebration = null;
@@ -935,6 +1105,11 @@ export class LobbyPage {
     if (this.pollHandle !== null) {
       clearInterval(this.pollHandle);
       this.pollHandle = null;
+    }
+
+    if (this.tickHandle !== null) {
+      clearInterval(this.tickHandle);
+      this.tickHandle = null;
     }
   }
 }

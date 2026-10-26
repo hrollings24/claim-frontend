@@ -1,0 +1,178 @@
+/*
+ * Full-screen game sheets: the pages that take over the screen mid-game — the draw after a claim
+ * or a failed steal, and choosing where to play a card. Ionic moves modals out of the page that
+ * opened them, so these styles live globally rather than in that page's stylesheet.
+ */
+
+.celebration {
+  --background: var(--ion-background-color);
+}
+
+.celebration-body {
+  margin: 0 auto;
+  max-width: 28rem;
+  padding: 2.5rem 0.5rem 1rem;
+  text-align: center;
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0.5rem 0 0.25rem;
+  }
+}
+
+.celebration-mark {
+  align-items: center;
+  background: var(--ion-color-success);
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  font-size: 2rem;
+  font-weight: 800;
+  height: 4.5rem;
+  justify-content: center;
+  margin: 0 auto;
+  width: 4.5rem;
+
+  &.hot {
+    background: #f97316;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+  }
+}
+
+.celebration-lead {
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem;
+}
+
+.celebration-hot {
+  color: #f97316;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.celebration-draw {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.celebration-note {
+  color: var(--ion-color-warning);
+  font-size: 0.9rem;
+}
+
+.drawn {
+  border-radius: 0.75rem;
+  margin: 0 0 1rem;
+  text-align: left;
+}
+
+.celebration-mark.held {
+  background: var(--ion-color-tertiary);
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+}
+
+.celebration-pick {
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+// Each newly drawn card turns over into place.
+.drawn-card {
+  animation: draw-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  transform-origin: center left;
+}
+
+@keyframes draw-in {
+  from {
+    opacity: 0;
+    transform: perspective(600px) rotateY(-80deg) translateY(-0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawn-card {
+    animation: none;
+  }
+}
+
+
+/* Choosing where to play a card. */
+
+.picker-card {
+  background: var(--app-grouped-card);
+  border: 1px solid var(--ion-color-primary);
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+
+  h2 {
+    font-size: 1.15rem;
+    margin: 0.2rem 0 0.35rem;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  &.steal {
+    border-color: var(--ion-color-danger);
+  }
+}
+
+.picker-kind {
+  color: var(--ion-color-medium);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.picker-prompt {
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+  margin: 0 0.25rem 0.5rem;
+}
+
+.picker-list {
+  border-radius: 0.75rem;
+}
+
+.picker .swatch {
+  border-radius: 50%;
+  display: inline-block;
+  height: 1rem;
+  margin-right: 0.75rem;
+  width: 1rem;
+}
+
+.picker-card.swap {
+  border-color: var(--ion-color-tertiary);
+}
+
+.picker-empty {
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+  margin: 0 0.25rem 1rem;
+}
+
+.picker-list {
+  margin-bottom: 1rem;
+
+  ion-item.chosen {
+    --background: rgba(var(--ion-color-tertiary-rgb), 0.18);
+  }
+}
+
+.picker .hot-timer {
+  color: #f97316;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
