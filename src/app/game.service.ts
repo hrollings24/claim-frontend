@@ -136,6 +136,14 @@ export interface PowerOffer {
   reason: string;
   keep: number;
   cards: PowerCard[];
+  /** What earned it: a claim, or holding on when another team's steal failed. */
+  source: 'Claim' | 'SurvivedSteal';
+  boroughId: string | null;
+  boroughName: string | null;
+  /** For a survived steal, the team that tried it. */
+  fromTeamName: string | null;
+  /** For a claim, whether it was the hot borough. */
+  wasHot: boolean;
 }
 
 export interface TeamScore {

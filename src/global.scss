@@ -35,3 +35,9 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.always.css";
+
+/* An alert listing one borough per line: its message is plain text, so line breaks have to be
+   kept by CSS rather than written as <br>. */
+ion-alert.borough-list .alert-message {
+  white-space: pre-line;
+}

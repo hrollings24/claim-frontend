@@ -379,40 +379,25 @@
           </ion-item>
         </ion-list>
 
-        <ion-list [inset]="true" *ngFor="let offer of currentBoard.yourPowerOffers">
-          <ion-list-header>
-            <ion-label>
-              {{ offer.reason }}
-              <p>
-                Keep {{ offer.keep === 1 ? 'one' : 'up to ' + offer.keep }} — the rest go back in the deck.
-                <span *ngIf="freePowerSlots < offer.keep">
-                  You have room for {{ freePowerSlots }}.
-                </span>
-              </p>
-            </ion-label>
-          </ion-list-header>
+        <!-- Draws waiting to be made: a steal that failed on you, or a claim left for later. Each
+             opens the draw page. -->
+        <div *ngFor="let offer of currentBoard.yourPowerOffers" class="alert-card draw-waiting" [class.steal-failed]="offer.source === 'SurvivedSteal'">
+          <ng-container *ngIf="offer.source === 'SurvivedSteal'; else claimWaiting">
+            <p class="alert-label">Steal failed!</p>
+            <p>
+              {{ offer.fromTeamName ?? 'Another team' }} tried to steal {{ offer.boroughName }} and failed.
+              You held on — and you get to draw for it.
+            </p>
+          </ng-container>
+          <ng-template #claimWaiting>
+            <p class="alert-label">Your draw is waiting</p>
+            <p>For claiming {{ offer.boroughName ?? 'a borough' }}.</p>
+          </ng-template>
 
-          <ion-item *ngFor="let card of offer.cards">
-            <ion-checkbox
-              justify="space-between"
-              [checked]="isPicked(offer, card)"
-              [disabled]="busy || !canPick(offer, card)"
-              (ionChange)="togglePick(offer, card)"
-            >
-              <ion-label class="ion-text-wrap">
-                {{ card.title }}
-                <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
-                <p>{{ card.description }}</p>
-              </ion-label>
-            </ion-checkbox>
-          </ion-item>
-
-          <ion-item lines="none">
-            <ion-button slot="end" [disabled]="busy" (click)="keepOffer(offer)">
-              {{ isPickedAny(offer) ? 'Keep' : 'Keep none' }}
-            </ion-button>
-          </ion-item>
-        </ion-list>
+          <ion-button expand="block" [disabled]="busy" (click)="openDraw(offer)">
+            Draw {{ offer.cards.length === 1 ? 'a card' : 'cards' }}
+          </ion-button>
+        </div>
 
         <ion-list [inset]="true">
           <ion-list-header>
@@ -490,6 +475,96 @@
             <ion-badge slot="end" [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
           </ion-item>
         </ion-list>
+
+        <!-- After a claim: the celebration, then the cards it drew — revealed on a tap, picked,
+             and confirmed — before going back to the game. -->
+        <ion-modal [isOpen]="celebration !== null" [backdropDismiss]="false" (didDismiss)="closeCelebration()">
+          <ng-template>
+            <ng-container *ngIf="celebration as party">
+              <ion-content class="ion-padding celebration">
+                <div class="celebration-body">
+                  <ng-container *ngIf="party.source === 'Claim'; else stealFailedHeader">
+                    <p class="celebration-mark" [class.hot]="party.wasHot">{{ party.wasHot ? 'HOT' : '✓' }}</p>
+                    <h1>Congratulations!</h1>
+                    <p class="celebration-lead">You claimed {{ party.boroughName }}.</p>
+                    <p *ngIf="party.wasHot" class="celebration-hot">
+                      It was the hot borough — 2 points, and double the power cards.
+                    </p>
+                  </ng-container>
+
+                  <ng-template #stealFailedHeader>
+                    <p class="celebration-mark held">HELD</p>
+                    <h1>Steal failed!</h1>
+                    <p class="celebration-lead">
+                      {{ party.fromTeamName ?? 'Another team' }} tried to steal {{ party.boroughName }} — and
+                      failed. It's still yours.
+                    </p>
+                  </ng-template>
+
+                  <ng-container *ngIf="celebrationOffer as offer; else nothingToDraw">
+                    <p class="celebration-draw">
+                      You can draw <strong>{{ offer.cards.length }}</strong> power
+                      {{ offer.cards.length === 1 ? 'card' : 'cards' }} and keep
+                      <strong>{{ offer.keep }}</strong>.
+                    </p>
+
+                    <!-- One card per tap: each lands on top of the pile below. -->
+                    <ion-list class="drawn" *ngIf="party.revealed > 0">
+                      <ion-item *ngFor="let card of revealedCards(offer)" lines="full" class="drawn-card">
+                        <ion-checkbox
+                          justify="space-between"
+                          [checked]="isPicked(offer, card)"
+                          [disabled]="busy || !canPick(offer, card)"
+                          (ionChange)="toggleDrawn(offer, card)"
+                        >
+                          <ion-label class="ion-text-wrap">
+                            {{ card.title }}
+                            <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
+                            <p>{{ card.description }}</p>
+                          </ion-label>
+                        </ion-checkbox>
+                      </ion-item>
+                    </ion-list>
+
+                    <ion-button *ngIf="!allDrawn(offer)" expand="block" size="large" (click)="drawNext()">
+                      {{ party.revealed === 0 ? 'Draw a card' : 'Draw another' }}
+                      ({{ party.revealed + 1 }} of {{ offer.cards.length }})
+                    </ion-button>
+
+                    <ng-container *ngIf="allDrawn(offer)">
+                      <p *ngIf="freePowerSlots < offer.keep" class="celebration-note">
+                        {{ freePowerSlots === 0
+                           ? "You're holding 5 already, so you can't keep any — play or discard one first, or confirm to pass."
+                           : 'You only have room for ' + freePowerSlots + ' more.' }}
+                      </p>
+                      <p *ngIf="pickLimit(offer) > 0" class="celebration-pick">
+                        Tick {{ pickLimit(offer) === 1 ? 'the one' : 'up to ' + pickLimit(offer) }} to keep.
+                      </p>
+
+                      <ion-button
+                        expand="block"
+                        size="large"
+                        [disabled]="busy || (celebrationPicked === 0 && pickLimit(offer) > 0)"
+                        (click)="confirmDraw()"
+                      >
+                        {{ pickLimit(offer) === 0 ? 'Confirm and pass' : 'Confirm' }}
+                      </ion-button>
+                    </ng-container>
+
+                    <ion-button expand="block" fill="clear" color="medium" [disabled]="busy" (click)="closeCelebration()">
+                      Choose later
+                    </ion-button>
+                  </ng-container>
+
+                  <ng-template #nothingToDraw>
+                    <p class="celebration-draw">The power deck is empty right now, so there's nothing to draw.</p>
+                    <ion-button expand="block" size="large" (click)="closeCelebration()">Back to the game</ion-button>
+                  </ng-template>
+                </div>
+              </ion-content>
+            </ng-container>
+          </ng-template>
+        </ion-modal>
 
         <ion-modal [isOpen]="detailsCard !== null" (didDismiss)="closeCardDetails()">
           <ng-template>

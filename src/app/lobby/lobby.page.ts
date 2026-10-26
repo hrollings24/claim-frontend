@@ -271,9 +271,119 @@ export class LobbyPage {
     await alert.present();
   }
 
+  /**
+   * Claims, then opens the congratulations page for the cards the claim drew. The draw is made
+   * on the server at the moment of the claim, so it is found here as the one offer that wasn't
+   * there before.
+   */
   private async submitPlay(card: HandCard, boroughId: string): Promise<void> {
     this.selectedCard = null;
+
+    const boroughName = this.board?.active.find(b => b.id === boroughId)?.name ?? 'the borough';
+    const wasHot = this.board?.hotBoroughId === boroughId;
+    const offersBefore = new Set((this.board?.yourPowerOffers ?? []).map(offer => offer.id));
+
     await this.act(() => this.gameService.playCard(this.code, card.id, boroughId));
+
+    const claimed = this.board?.territories.some(t => t.id === boroughId && t.teamId === this.game?.yourTeamId);
+    if (!claimed) {
+      return;
+    }
+
+    const offer = (this.board?.yourPowerOffers ?? []).find(o => !offersBefore.has(o.id)) ?? null;
+    this.zone.run(() => {
+      this.celebration = offer
+        ? this.celebrationFor(offer)
+        : { offerId: null, source: 'Claim', boroughName, fromTeamName: null, wasHot, revealed: 0 };
+    });
+  }
+
+  // ---- The draw page: after a claim, or after surviving a steal ----
+
+  /**
+   * Open while the draw page is showing. Holds the offer's id rather than the offer, so it always
+   * reads the latest copy from the game — and closes itself if the offer is chosen from another
+   * phone in the meantime. `revealed` is how many cards have been turned over so far.
+   */
+  celebration: {
+    offerId: string | null;
+    source: PowerOffer['source'];
+    boroughName: string;
+    fromTeamName: string | null;
+    wasHot: boolean;
+    revealed: number;
+  } | null = null;
+
+  private celebrationFor(offer: PowerOffer): NonNullable<LobbyPage['celebration']> {
+    return {
+      offerId: offer.id,
+      source: offer.source,
+      boroughName: offer.boroughName ?? 'the borough',
+      fromTeamName: offer.fromTeamName,
+      wasHot: offer.wasHot,
+      revealed: 0,
+    };
+  }
+
+  get celebrationOffer(): PowerOffer | null {
+    const id = this.celebration?.offerId;
+    return id ? (this.board?.yourPowerOffers ?? []).find(o => o.id === id) ?? null : null;
+  }
+
+  /** From a waiting draw on the game screen — a "Choose later", or a steal that failed on you. */
+  openDraw(offer: PowerOffer): void {
+    this.celebration = this.celebrationFor(offer);
+  }
+
+  /** The cards turned over so far, in the order they were drawn. */
+  revealedCards(offer: PowerOffer): PowerCard[] {
+    return offer.cards.slice(0, this.celebration?.revealed ?? 0);
+  }
+
+  allDrawn(offer: PowerOffer): boolean {
+    return (this.celebration?.revealed ?? 0) >= offer.cards.length;
+  }
+
+  /**
+   * Turns over one more card — the draw is one card per tap, for the drama. Everything the page
+   * does goes through the zone: Ionic moves a modal out of the page, its buttons fire outside
+   * Angular's zone, and state changed there is never rendered.
+   */
+  drawNext(): void {
+    this.zone.run(() => {
+      const offer = this.celebrationOffer;
+      if (this.celebration && offer && !this.allDrawn(offer)) {
+        this.celebration = { ...this.celebration, revealed: this.celebration.revealed + 1 };
+      }
+    });
+  }
+
+  toggleDrawn(offer: PowerOffer, card: PowerCard): void {
+    this.zone.run(() => this.togglePick(offer, card));
+  }
+
+  /** Keeps what's ticked — nothing, if the team has no room — then back to the game. */
+  confirmDraw(): Promise<void> {
+    return this.zone.run(async () => {
+      const offer = this.celebrationOffer;
+      if (offer) {
+        await this.keepOffer(offer);
+      }
+
+      this.celebration = null;
+    });
+  }
+
+  /** The offer stays on the game screen, so leaving now loses nothing. */
+  closeCelebration(): void {
+    this.zone.run(() => {
+      this.celebration = null;
+    });
+  }
+
+  get celebrationPicked(): number {
+    const offer = this.celebrationOffer;
+    return offer ? (this.offerPicks[offer.id] ?? []).length : 0;
   }
 
   // ---- Power cards ----
@@ -658,11 +768,14 @@ export class LobbyPage {
   async showTeamBoroughs(score: TeamScore): Promise<void> {
     const held = (this.board?.territories ?? []).filter(t => t.teamId === score.teamId);
 
+    // Ionic shows an alert's message as plain text, not HTML, so a <br> came out literally.
+    // One name per line, kept as lines by the borough-list class.
     const alert = await this.alerts.create({
       header: score.name,
       message: held.length > 0
-        ? held.map(t => t.name).join('<br>')
+        ? held.map(t => t.name + (t.isFortified ? ' (fortified)' : '')).join('\n')
         : 'No boroughs claimed yet.',
+      cssClass: 'borough-list',
       buttons: ['Close'],
     });
 
@@ -802,6 +915,11 @@ export class LobbyPage {
     if (!this.powerConfigurationLoaded) {
       this.powerConfigurationId = game.powerConfigurationId;
       this.powerConfigurationLoaded = true;
+    }
+
+    // Chosen from a teammate's phone while this one was still on the congratulations page.
+    if (this.celebration?.offerId && !(game.board?.yourPowerOffers ?? []).some(o => o.id === this.celebration?.offerId)) {
+      this.celebration = null;
     }
 
     // A pick for an offer that's gone — kept from another phone, say — means nothing now.

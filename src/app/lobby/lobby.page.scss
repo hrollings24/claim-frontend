@@ -207,3 +207,118 @@
 .map-header {
   padding-left: 1rem;
 }
+
+.celebration {
+  --background: var(--ion-background-color);
+}
+
+.celebration-body {
+  margin: 0 auto;
+  max-width: 28rem;
+  padding: 2.5rem 0.5rem 1rem;
+  text-align: center;
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0.5rem 0 0.25rem;
+  }
+}
+
+.celebration-mark {
+  align-items: center;
+  background: var(--ion-color-success);
+  border-radius: 50%;
+  color: #fff;
+  display: inline-flex;
+  font-size: 2rem;
+  font-weight: 800;
+  height: 4.5rem;
+  justify-content: center;
+  margin: 0 auto;
+  width: 4.5rem;
+
+  &.hot {
+    background: #f97316;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+  }
+}
+
+.celebration-lead {
+  font-size: 1.15rem;
+  margin: 0 0 0.5rem;
+}
+
+.celebration-hot {
+  color: #f97316;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.celebration-draw {
+  font-size: 1.05rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.celebration-note {
+  color: var(--ion-color-warning);
+  font-size: 0.9rem;
+}
+
+.drawn {
+  border-radius: 0.75rem;
+  margin: 0 0 1rem;
+  text-align: left;
+}
+
+.celebration-mark.held {
+  background: var(--ion-color-tertiary);
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+}
+
+.celebration-pick {
+  color: var(--ion-color-medium);
+  font-size: 0.9rem;
+}
+
+// Each newly drawn card turns over into place.
+.drawn-card {
+  animation: draw-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  transform-origin: center left;
+}
+
+@keyframes draw-in {
+  from {
+    opacity: 0;
+    transform: perspective(600px) rotateY(-80deg) translateY(-0.5rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.draw-waiting {
+  border: 1px solid var(--ion-color-primary);
+
+  .alert-label {
+    color: var(--ion-color-primary);
+  }
+
+  &.steal-failed {
+    border-color: var(--ion-color-tertiary);
+
+    .alert-label {
+      color: var(--ion-color-tertiary);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawn-card {
+    animation: none;
+  }
+}
