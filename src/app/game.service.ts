@@ -14,6 +14,8 @@ export interface GamePlayer {
 export interface GameTeam {
   id: string;
   name: string;
+  /** An id from TEAM_COLORS; null for a team made before colours existed. */
+  color: string | null;
 }
 
 export interface ActiveBorough {
@@ -234,20 +236,24 @@ export class GameService {
     );
   }
 
+  /** Only your own team's, only in the lobby, and only one no other team has. */
+  setTeamColor(code: string, teamId: string, color: string): Promise<Game> {
+    return this.api.post<Game>(
+      `/api/games/${encodeURIComponent(code)}/teams/${encodeURIComponent(teamId)}/color`,
+      { color },
+    );
+  }
+
   leaveTeam(code: string): Promise<Game> {
     return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/teams/leave`);
   }
 
   /**
-   * Plays a claim challenge at an active borough, reporting whether it came off. A success
-   * claims it and draws power cards, which arrive as an offer to choose from.
+   * Plays a completed claim challenge at an active borough: it claims the borough and draws
+   * power cards, which arrive as an offer to choose from. Claims can't fail — only steals can.
    */
-  playCard(code: string, cardId: string, boroughId: string, succeeded: boolean): Promise<Game> {
-    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/play`, {
-      cardId,
-      boroughId,
-      succeeded,
-    });
+  playCard(code: string, cardId: string, boroughId: string): Promise<Game> {
+    return this.api.post<Game>(`/api/games/${encodeURIComponent(code)}/play`, { cardId, boroughId });
   }
 
   /** Keeps the chosen cards from an offer; the rest are discarded. An empty list turns it down. */

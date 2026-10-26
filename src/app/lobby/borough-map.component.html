@@ -1,0 +1,43 @@
+<div class="map">
+  <svg [attr.viewBox]="viewBox" role="img" aria-label="Map of London's boroughs">
+    <g *ngFor="let tile of tiles; trackBy: trackTile" class="tile" (click)="select(tile)">
+      <rect
+        [attr.x]="tile.x"
+        [attr.y]="tile.y"
+        [attr.width]="size"
+        [attr.height]="size"
+        rx="1.2"
+        [attr.fill]="tile.fill"
+        [class.selected]="tile.id === selectedId"
+        [class.hot]="tile.hot"
+      ></rect>
+      <text
+        [attr.x]="tile.x + size / 2"
+        [attr.y]="tile.y + size / 2 + (tile.fortified ? -0.6 : 0)"
+        [attr.fill]="tile.text"
+        text-anchor="middle"
+        dominant-baseline="central"
+        class="code"
+      >{{ tile.code }}</text>
+      <text
+        *ngIf="tile.fortified"
+        [attr.x]="tile.x + size / 2"
+        [attr.y]="tile.y + size - 1.6"
+        [attr.fill]="tile.text"
+        text-anchor="middle"
+        class="mark"
+      >LOCKED</text>
+    </g>
+  </svg>
+
+  <p class="caption" [class.placeholder]="!selectedCaption">
+    {{ selectedCaption ?? 'Tap a borough to see who holds it.' }}
+  </p>
+
+  <div class="legend">
+    <span *ngFor="let entry of legend" class="key"><i [style.background]="entry.hex"></i>{{ entry.name }}</span>
+    <span class="key"><i [style.background]="colors.active"></i>On the board</span>
+    <span class="key"><i [style.background]="colors.hot"></i>Hot</span>
+    <span class="key"><i [style.background]="colors.idle" class="idle"></i>Not in play</span>
+  </div>
+</div>

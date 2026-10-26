@@ -61,6 +61,7 @@
       </ion-item>
 
       <ion-item *ngFor="let team of currentGame.teams">
+        <span slot="start" class="swatch" [style.background]="colorOf(team)"></span>
         <ion-label class="ion-text-wrap">
           {{ team.name }}
           <p>{{ memberCount(team.id) }} in this team</p>
@@ -80,6 +81,25 @@
         >
           Join
         </ion-button>
+      </ion-item>
+
+      <!-- Your team's colour is what your boroughs are drawn in on the map. -->
+      <ion-item *ngIf="currentGame.yourTeamId && !currentGame.board" lines="none">
+        <ion-label class="ion-text-wrap">
+          Your team's colour
+          <div class="palette">
+            <button
+              *ngFor="let color of teamColors"
+              type="button"
+              class="swatch-button"
+              [style.background]="color.hex"
+              [class.chosen]="color.id === yourTeamColorId"
+              [disabled]="busy || colorTaken(color.id)"
+              [attr.aria-label]="color.name + (colorTaken(color.id) ? ' (taken)' : '')"
+              (click)="pickColor(color.id)"
+            ></button>
+          </div>
+        </ion-label>
       </ion-item>
 
       <ion-item *ngIf="currentGame.yourTeamId && !currentGame.board">
@@ -243,6 +263,7 @@
         </ion-list-header>
 
         <ion-item button *ngFor="let score of currentBoard.scores" (click)="showTeamBoroughs(score)">
+          <span slot="start" class="swatch" [style.background]="colorOfTeamId(score.teamId)"></span>
           <ion-label class="ion-text-wrap">
             {{ score.name }}
             <p>{{ score.territories }} boroughs, {{ score.bonusPoints }} bonus</p>
@@ -250,6 +271,11 @@
           <ion-badge slot="end">{{ score.score }}</ion-badge>
         </ion-item>
       </ion-list>
+
+      <ion-list-header class="map-header">
+        <ion-label>Map</ion-label>
+      </ion-list-header>
+      <app-borough-map [board]="currentBoard" [teams]="currentGame.teams" [yourTeamId]="currentGame.yourTeamId"></app-borough-map>
 
       <div *ngIf="currentGame.status === 'Finished'" class="ion-text-center ion-padding-vertical">
         <h2>Time's up</h2>

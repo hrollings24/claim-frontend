@@ -20,6 +20,8 @@ import {
 } from '../game.service';
 import { LastGameService } from '../last-game.service';
 import { PowerConfigService, PowerConfiguration } from '../power-config.service';
+import { TEAM_COLORS, teamHex } from '../team-colors';
+import { GameTeam } from '../game.service';
 
 /**
  * The roster changes rarely (someone joins, someone leaves), so it is polled rather than
@@ -63,6 +65,8 @@ export class LobbyPage {
   private powerConfigurationLoaded = false;
 
   readonly kindColor: (kind: PowerKind) => string = powerKindColor;
+
+  readonly teamColors = TEAM_COLORS;
 
   /** Game length as the two fields the lobby shows, kept whole in minutes on the server. */
   durationHours = 1;
@@ -244,7 +248,10 @@ export class LobbyPage {
     return this.formatDuration(minutes) + ' left';
   }
 
-  /** Asks how the challenge went, then plays the card either way — a spent card is spent. */
+  /**
+   * Confirms before claiming. A claim can't be failed — you only play one once it's done — so
+   * the only question is whether you meant to tap this borough.
+   */
   async playAt(boroughId: string, boroughName: string): Promise<void> {
     const card = this.selectedCard;
     if (!card) {
@@ -252,21 +259,21 @@ export class LobbyPage {
     }
 
     const alert = await this.alerts.create({
-      header: card.title,
-      subHeader: boroughName,
+      header: `Claim ${boroughName}?`,
+      subHeader: card.title,
+      message: 'Only once you\'ve completed the challenge.',
       buttons: [
         { text: 'Cancel', role: 'cancel' },
-        { text: 'Failed', handler: () => void this.submitPlay(card, boroughId, false) },
-        { text: 'Done it', handler: () => void this.submitPlay(card, boroughId, true) },
+        { text: 'Done it', handler: () => void this.submitPlay(card, boroughId) },
       ],
     });
 
     await alert.present();
   }
 
-  private async submitPlay(card: HandCard, boroughId: string, succeeded: boolean): Promise<void> {
+  private async submitPlay(card: HandCard, boroughId: string): Promise<void> {
     this.selectedCard = null;
-    await this.act(() => this.gameService.playCard(this.code, card.id, boroughId, succeeded));
+    await this.act(() => this.gameService.playCard(this.code, card.id, boroughId));
   }
 
   // ---- Power cards ----
@@ -675,6 +682,33 @@ export class LobbyPage {
     });
 
     await alert.present();
+  }
+
+  get yourTeamColorId(): string | null {
+    return this.game?.teams.find(t => t.id === this.game?.yourTeamId)?.color ?? null;
+  }
+
+  colorOf(team: GameTeam): string {
+    return teamHex(team, this.game?.teams ?? []);
+  }
+
+  colorOfTeamId(teamId: string): string {
+    const team = this.game?.teams.find(t => t.id === teamId);
+    return team ? this.colorOf(team) : 'transparent';
+  }
+
+  /** Taken by a team other than yours — you can't pick it. */
+  colorTaken(colorId: string): boolean {
+    return (this.game?.teams ?? []).some(t => t.color === colorId && t.id !== this.game?.yourTeamId);
+  }
+
+  pickColor(colorId: string): Promise<void> {
+    const teamId = this.game?.yourTeamId;
+    if (!teamId || this.colorTaken(colorId)) {
+      return Promise.resolve();
+    }
+
+    return this.act(() => this.gameService.setTeamColor(this.code, teamId, colorId));
   }
 
   joinTeam(teamId: string): Promise<void> {
