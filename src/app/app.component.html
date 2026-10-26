@@ -35,6 +35,18 @@
         </ion-item>
       </ion-list>
 
+      <ion-list *ngIf="needsHomeScreen">
+        <ion-item lines="none">
+          <ion-label class="ion-text-wrap">
+            Notifications
+            <p>
+              On iPhone, add this app to your Home Screen first: tap Share, then Add to Home
+              Screen, and open it from there. The switch appears here once you do.
+            </p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+
       <ion-list *ngIf="canOfferPush">
         <ion-item>
           <ion-toggle

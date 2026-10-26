@@ -49,6 +49,10 @@ export class AppComponent {
     return this.pushState !== 'unsupported' && this.pushState !== 'unconfigured';
   }
 
+  get needsHomeScreen(): boolean {
+    return this.pushState === 'unsupported' && this.push.needsHomeScreen;
+  }
+
   get pushBlocked(): boolean {
     return this.pushState === 'blocked';
   }

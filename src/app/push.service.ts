@@ -20,6 +20,20 @@ export class PushService {
     return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   }
 
+  /**
+   * An iPhone or iPad in a Safari tab: push is possible, but only once the app is opened from
+   * the home screen. Worth saying so — otherwise the option just isn't there, which looks broken.
+   * iPadOS reports itself as a Mac, so a touch screen is what gives it away.
+   */
+  get needsHomeScreen(): boolean {
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent)
+      || (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
+    const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true
+      || window.matchMedia('(display-mode: standalone)').matches;
+
+    return ios && !standalone && !this.isSupported;
+  }
+
   async state(): Promise<PushState> {
     if (!this.isSupported) {
       return 'unsupported';
