@@ -287,6 +287,45 @@
       </ng-container>
         </ion-list>
 
+      <!-- Curses sit above the map: one on you changes how you can get anywhere, so it's the
+           first thing to see. -->
+      <ng-container *ngIf="currentGame.status === 'InProgress'">
+        <!-- A curse is on you from the moment it's cast. Answering it is always your choice. -->
+        <div *ngFor="let curse of cursesOnYou" class="alert-card curse-on-you">
+          <p class="alert-label">
+            {{ curse.isReversal ? 'Reversed back on you by' : 'Cursed by' }} {{ curse.fromTeamName }}
+          </p>
+          <h2>{{ curse.title }}</h2>
+          <p>{{ curse.description }}</p>
+          <p class="countdown">{{ curse.endsAt ? countdownTo(curse.endsAt) : 'Until you mark it cleared' }}</p>
+          <div class="alert-actions">
+            <ion-button *ngIf="canReverse(curse)" color="tertiary" [disabled]="busy" (click)="reverseCurse(curse)">
+              Reverse
+            </ion-button>
+            <ion-button *ngIf="!curse.endsAt" fill="outline" [disabled]="busy" (click)="clearCurse(curse)">
+              Mark cleared
+            </ion-button>
+          </div>
+        </div>
+
+        <ion-list [inset]="true" *ngIf="cursesYouCast.length > 0">
+          <ion-list-header class="toggle" (click)="toggle('curses')">
+            <ion-icon class="chevron" [name]="isCollapsed('curses') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
+            <ion-label>Your curses in play</ion-label>
+          </ion-list-header>
+          <ng-container *ngIf="!isCollapsed('curses')">
+
+          <ion-item *ngFor="let curse of cursesYouCast">
+            <ion-label class="ion-text-wrap">
+              {{ curse.title }}
+              <p>On {{ curse.targetTeamName }} · {{ curse.endsAt ? countdownTo(curse.endsAt) : 'until they clear it' }}</p>
+            </ion-label>
+          </ion-item>
+        </ng-container>
+        </ion-list>
+
+      </ng-container>
+
       <ion-list-header class="map-header toggle" (click)="toggle('map')">
         <ion-icon class="chevron" [name]="isCollapsed('map') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
         <ion-label>Map</ion-label>
@@ -332,24 +371,6 @@
           <p class="countdown">{{ countdownTo(steal.expiresAt) }}</p>
         </div>
 
-        <!-- A curse is on you from the moment it's cast. Answering it is always your choice. -->
-        <div *ngFor="let curse of cursesOnYou" class="alert-card curse-on-you">
-          <p class="alert-label">
-            {{ curse.isReversal ? 'Reversed back on you by' : 'Cursed by' }} {{ curse.fromTeamName }}
-          </p>
-          <h2>{{ curse.title }}</h2>
-          <p>{{ curse.description }}</p>
-          <p class="countdown">{{ curse.endsAt ? countdownTo(curse.endsAt) : 'Until you mark it cleared' }}</p>
-          <div class="alert-actions">
-            <ion-button *ngIf="canReverse(curse)" color="tertiary" [disabled]="busy" (click)="reverseCurse(curse)">
-              Reverse
-            </ion-button>
-            <ion-button *ngIf="!curse.endsAt" fill="outline" [disabled]="busy" (click)="clearCurse(curse)">
-              Mark cleared
-            </ion-button>
-          </div>
-        </div>
-
         <!-- A Swap has been committed but not finished: their cards wait on the swap page. -->
         <div *ngFor="let swap of pendingSwaps" class="alert-card swap-open">
           <p class="alert-label">Swapping with {{ swap.teamName }}</p>
@@ -358,22 +379,6 @@
             Choose cards
           </ion-button>
         </div>
-
-        <ion-list [inset]="true" *ngIf="cursesYouCast.length > 0">
-          <ion-list-header class="toggle" (click)="toggle('curses')">
-            <ion-icon class="chevron" [name]="isCollapsed('curses') ? 'chevron-forward' : 'chevron-down'"></ion-icon>
-            <ion-label>Your curses in play</ion-label>
-          </ion-list-header>
-          <ng-container *ngIf="!isCollapsed('curses')">
-
-          <ion-item *ngFor="let curse of cursesYouCast">
-            <ion-label class="ion-text-wrap">
-              {{ curse.title }}
-              <p>On {{ curse.targetTeamName }} · {{ curse.endsAt ? countdownTo(curse.endsAt) : 'until they clear it' }}</p>
-            </ion-label>
-          </ion-item>
-        </ng-container>
-        </ion-list>
 
         <!-- Draws waiting to be made: a steal that failed on you, or a claim left for later. Each
              opens the draw page. -->
@@ -592,6 +597,7 @@
                 <ng-container *ngIf="choosing.kind === 'swap'">
                   <p class="picker-prompt">
                     Pick a team. Their power cards are revealed to you — then take one and give one of yours.
+                    If they're holding none, your Swap is wasted.
                   </p>
                   <ion-list class="picker-list">
                     <ion-item *ngFor="let team of otherTeams" button detail [disabled]="busy" (click)="swapWith(team)">

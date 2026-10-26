@@ -1,6 +1,6 @@
 import { Component, NgZone } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AlertController } from '@ionic/angular';
+import { AlertController, ToastController } from '@ionic/angular';
 import {
   Curse,
   Game,
@@ -130,6 +130,7 @@ export class LobbyPage {
     private router: Router,
     private gameService: GameService,
     private alerts: AlertController,
+    private toasts: ToastController,
     private zone: NgZone,
     private lastGame: LastGameService,
     private powerConfigs: PowerConfigService,
@@ -769,7 +770,7 @@ export class LobbyPage {
 
   /**
    * Committing a Swap reveals their cards and uses the Swap up, so it asks first — then opens the
-   * take-and-give page straight away.
+   * take-and-give page straight away. It's a gamble: a team holding nothing leaves it wasted.
    */
   async swapWith(team: GameTeam): Promise<void> {
     if (this.picker?.kind !== 'swap') {
@@ -779,22 +780,39 @@ export class LobbyPage {
     const card = this.picker.card;
     const alert = await this.alerts.create({
       header: `Swap with ${team.name}?`,
-      message: "Their power cards are revealed to you, and your Swap is used. You'll take one and give one back.",
+      message: "Their power cards are revealed to you, and your Swap is used: you'll take one and give one back. If they're holding none, it's wasted.",
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {
           text: 'See their cards',
+          // The picker stays open until the server has answered, so a refusal pops up here rather
+          // than out of sight on the game screen.
           handler: () => {
-            this.closePicker();
             void this.zone.run(async () => {
               await this.act(() => this.gameService.playPower(this.code, card.id, { targetTeamId: team.id }));
+
               if (this.pendingSwaps.some(s => s.cardId === card.id)) {
+                this.picker = null;
                 this.swapSheet = card.id;
+              } else if (this.playedPowers.some(c => c.id === card.id)) {
+                this.picker = null;
+                await this.swapWasted(team);
               }
             });
           },
         },
       ],
+    });
+
+    await alert.present();
+  }
+
+  /** They had nothing to take, so the Swap is spent with nothing to show for it. */
+  private async swapWasted(team: GameTeam): Promise<void> {
+    const alert = await this.alerts.create({
+      header: 'Nothing to swap',
+      message: `${team.name} had no power cards — your Swap is wasted.`,
+      buttons: ['OK'],
     });
 
     await alert.present();
@@ -1043,7 +1061,11 @@ export class LobbyPage {
     return this.act(() => this.gameService.createTeam(this.code, name));
   }
 
-  /** Every lobby action returns the updated game, so the screen doesn't wait for the next poll. */
+  /**
+   * Every lobby action returns the updated game, so the screen doesn't wait for the next poll. A
+   * refusal also pops up as a toast: the error line sits at the top of the screen, which is out of
+   * sight from most of the game — and behind any full-screen page that's open.
+   */
   private async act(action: () => Promise<Game>): Promise<void> {
     this.busy = true;
     this.error = null;
@@ -1052,9 +1074,22 @@ export class LobbyPage {
     } catch (error: unknown) {
       this.error =
         (error as { error?: { title?: string } })?.error?.title ?? 'That did not work.';
+      void this.showError(this.error);
     } finally {
       this.busy = false;
     }
+  }
+
+  private async showError(message: string): Promise<void> {
+    const toast = await this.toasts.create({
+      message,
+      duration: 4000,
+      position: 'top',
+      color: 'danger',
+      buttons: [{ text: 'OK', role: 'cancel' }],
+    });
+
+    await toast.present();
   }
 
   private apply(game: Game): void {
