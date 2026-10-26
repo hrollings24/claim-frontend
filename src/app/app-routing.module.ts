@@ -38,6 +38,11 @@ const routes: Routes = [
     loadChildren: () => import('./challenges/challenges.module').then( m => m.ChallengesPageModule)
   },
   {
+    path: 'notifications',
+    canActivate: [authGuard],
+    loadChildren: () => import('./notifications/notifications.module').then( m => m.NotificationsPageModule)
+  },
+  {
     path: 'power-cards/cards/new',
     canActivate: [authGuard],
     loadChildren: () => import('./power-card-edit/power-card-edit.module').then( m => m.PowerCardEditPageModule)

@@ -1,7 +1,7 @@
 <ion-app>
   <!-- The menu is only for signed-in users, so it is disabled outright when signed out —
        that stops a swipe from opening it even where no menu button is rendered. -->
-  <ion-menu contentId="main-content" [disabled]="!(user$ | async)">
+  <ion-menu contentId="main-content" [disabled]="!(user$ | async)" (ionWillOpen)="refreshInboxCount()">
     <ion-header>
       <ion-toolbar>
         <ion-title>Menu</ion-title>
@@ -22,6 +22,11 @@
           <ion-label>Join game</ion-label>
         </ion-item>
 
+        <ion-item button (click)="openNotifications()">
+          <ion-label>Notifications</ion-label>
+          <ion-badge slot="end" color="danger" *ngIf="inboxCount > 0">{{ inboxCount }}</ion-badge>
+        </ion-item>
+
         <ion-item button (click)="openChallenges()">
           <ion-label>Challenges</ion-label>
         </ion-item>
@@ -38,7 +43,7 @@
       <ion-list *ngIf="needsHomeScreen">
         <ion-item lines="none">
           <ion-label class="ion-text-wrap">
-            Notifications
+            Push to this device
             <p>
               On iPhone, add this app to your Home Screen first: tap Share, then Add to Home
               Screen, and open it from there. The switch appears here once you do.
@@ -55,7 +60,7 @@
             (ionChange)="togglePush($any($event).detail.checked)"
           >
             <ion-label>
-              Notifications
+              Push to this device
               <p *ngIf="pushBlocked">Blocked in your browser settings</p>
             </ion-label>
           </ion-toggle>

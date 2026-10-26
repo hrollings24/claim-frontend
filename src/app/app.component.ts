@@ -4,6 +4,7 @@ import { MenuController, ToastController } from '@ionic/angular';
 import { AuthService } from './auth.service';
 import { GameService } from './game.service';
 import { LastGameService } from './last-game.service';
+import { NotificationService } from './notification.service';
 import { PushService, PushState } from './push.service';
 
 @Component({
@@ -18,6 +19,9 @@ export class AppComponent {
 
   pushState: PushState = 'unsupported';
 
+  /** How many are waiting in the inbox — refreshed whenever the menu opens. */
+  inboxCount = 0;
+
   constructor(
     private authService: AuthService,
     private gameService: GameService,
@@ -26,6 +30,7 @@ export class AppComponent {
     private toasts: ToastController,
     private push: PushService,
     private lastGame: LastGameService,
+    private notifications: NotificationService,
   ) {
     void this.refreshPushState();
   }
@@ -80,6 +85,20 @@ export class AppComponent {
     } catch {
       this.pushState = 'unsupported';
     }
+  }
+
+  /** Best effort: a count that fails to load just isn't shown. */
+  async refreshInboxCount(): Promise<void> {
+    try {
+      this.inboxCount = (await this.notifications.list()).length;
+    } catch {
+      this.inboxCount = 0;
+    }
+  }
+
+  async openNotifications(): Promise<void> {
+    await this.menu.close();
+    await this.router.navigateByUrl('/notifications');
   }
 
   async openChallenges(): Promise<void> {
