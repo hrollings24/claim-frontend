@@ -45,6 +45,22 @@ export class ChallengesPage {
       && (this.author === null || challenge.createdByName === this.author));
   }
 
+  /**
+   * How many each option would show, before it's picked — counted against the other filter as it
+   * stands, so with Ryan picked, "Steal" counts Ryan's steals.
+   */
+  typeCount(type: ChallengeType | 'All'): number {
+    return this.challenges.filter(challenge =>
+      (type === 'All' || challenge.type === type)
+      && (this.author === null || challenge.createdByName === this.author)).length;
+  }
+
+  authorCount(name: string | null): number {
+    return this.challenges.filter(challenge =>
+      (this.filter === 'All' || challenge.type === this.filter)
+      && (name === null || challenge.createdByName === name)).length;
+  }
+
   /** Everyone who has written a challenge, alphabetically, for the "Created by" filter. */
   get authors(): string[] {
     return [...new Set(this.challenges.map(challenge => challenge.createdByName))]

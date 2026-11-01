@@ -37,3 +37,13 @@
 .author-filter {
   margin-top: 0.5rem;
 }
+
+// The count beside each type, a small pill so it reads as a number rather than part of the word.
+.count {
+  background: rgba(var(--ion-color-medium-rgb), 0.25);
+  border-radius: 999px;
+  font-size: 0.75em;
+  font-variant-numeric: tabular-nums;
+  margin-left: 0.25rem;
+  padding: 0.05rem 0.45rem;
+}

@@ -797,6 +797,7 @@
                          ? 'Pick a borough to steal'
                          : card.kind === 'Fortify' ? 'Pick a borough to fortify'
                          : card.kind === 'Swap' ? 'Pick a team to swap with'
+                         : card.kind === 'Shuffle' ? 'Shuffle your hand'
                          : (card.kind === 'Boost' ? 'Play this boost' : 'Play this curse') }}
                     </ion-button>
                     <ion-button expand="block" fill="clear" color="medium" [disabled]="busy" (click)="discardFromDetails()">

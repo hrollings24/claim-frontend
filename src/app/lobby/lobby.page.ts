@@ -520,6 +520,11 @@ export class LobbyPage {
       return;
     }
 
+    if (card.kind === 'Shuffle') {
+      await this.confirmShuffle(card);
+      return;
+    }
+
     const alert = await this.alerts.create({
       header: `Play ${card.title}?`,
       message: 'It is marked as played straight away. Let the others know in the group chat if it affects them.',
@@ -555,6 +560,20 @@ export class LobbyPage {
           handler: (teamId: string) =>
             void this.act(() => this.gameService.playPower(this.code, card.id, { targetTeamId: teamId })),
         },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  /** Your whole hand goes, not just the challenge you'd rather lose, so it asks first. */
+  private async confirmShuffle(card: PowerCard): Promise<void> {
+    const alert = await this.alerts.create({
+      header: 'Shuffle your hand?',
+      message: `All ${this.board?.yourHand.length ?? 5} of your claim challenges are replaced with new ones. There's no getting the old ones back.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Shuffle', handler: () => void this.act(() => this.gameService.playPower(this.code, card.id)) },
       ],
     });
 

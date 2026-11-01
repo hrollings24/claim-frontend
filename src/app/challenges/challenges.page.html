@@ -24,16 +24,17 @@
   </ion-refresher>
 
   <ion-segment [(ngModel)]="filter" class="type-filter">
-    <ion-segment-button value="All"><ion-label>All</ion-label></ion-segment-button>
-    <ion-segment-button value="Claim"><ion-label>Claim</ion-label></ion-segment-button>
-    <ion-segment-button value="Steal"><ion-label>Steal</ion-label></ion-segment-button>
+    <ion-segment-button value="All"><ion-label>All <span class="count">{{ typeCount('All') }}</span></ion-label></ion-segment-button>
+    <ion-segment-button value="Claim"><ion-label>Claim <span class="count">{{ typeCount('Claim') }}</span></ion-label></ion-segment-button>
+    <ion-segment-button value="Steal"><ion-label>Steal <span class="count">{{ typeCount('Steal') }}</span></ion-label></ion-segment-button>
   </ion-segment>
 
   <ion-list [inset]="true" class="author-filter" *ngIf="authors.length > 1">
     <ion-item>
       <ion-select label="Created by" interface="popover" [(ngModel)]="author">
-        <ion-select-option [value]="null">Everyone</ion-select-option>
-        <ion-select-option *ngFor="let name of authors" [value]="name">{{ name }}</ion-select-option>
+        <!-- A select option is plain text, so the count goes in brackets rather than a badge. -->
+        <ion-select-option [value]="null">Everyone ({{ authorCount(null) }})</ion-select-option>
+        <ion-select-option *ngFor="let name of authors" [value]="name">{{ name }} ({{ authorCount(name) }})</ion-select-option>
       </ion-select>
     </ion-item>
   </ion-list>
