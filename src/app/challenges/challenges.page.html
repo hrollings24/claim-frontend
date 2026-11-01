@@ -101,7 +101,7 @@
 
       <ion-content class="ion-padding">
         <p class="summary">{{ selected?.summary }}</p>
-        <p class="details">{{ selected?.furtherDetails }}</p>
+        <p class="details"><ng-container *ngFor="let part of selected?.furtherDetails | linkParts"><a *ngIf="part.href; else plainText" [href]="part.href" target="_blank" rel="noopener noreferrer">{{ part.text }}</a><ng-template #plainText>{{ part.text }}</ng-template></ng-container></p>
         <p class="attribution">Added by {{ selected?.createdByName }}</p>
 
         <!-- Only the author gets these; everyone else can read the card but not change it. -->

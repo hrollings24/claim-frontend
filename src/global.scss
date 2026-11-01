@@ -43,3 +43,12 @@ ion-alert.borough-list .alert-message {
 }
 
 @import "./theme/sheets";
+
+/* Links inside player-written text: visible, and long ones wrap rather than push the page wide. */
+.details a,
+.alert-card a,
+ion-modal ion-content p a {
+  color: var(--ion-color-primary);
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+}

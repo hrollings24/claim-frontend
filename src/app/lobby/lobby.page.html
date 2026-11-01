@@ -296,7 +296,7 @@
             {{ curse.isReversal ? 'Reversed back on you by' : 'Cursed by' }} {{ curse.fromTeamName }}
           </p>
           <h2>{{ curse.title }}</h2>
-          <p>{{ curse.description }}</p>
+          <p><ng-container *ngFor="let part of curse.description | linkParts"><a *ngIf="part.href; else plainText" [href]="part.href" target="_blank" rel="noopener noreferrer">{{ part.text }}</a><ng-template #plainText>{{ part.text }}</ng-template></ng-container></p>
           <p class="countdown">{{ curse.endsAt ? countdownTo(curse.endsAt) : 'Until you mark it cleared' }}</p>
           <div class="alert-actions">
             <ion-button *ngIf="canReverse(curse)" color="tertiary" [disabled]="busy" (click)="reverseCurse(curse)">
@@ -353,7 +353,7 @@
           <p class="steal-label">Stealing {{ card.steal!.boroughName }}</p>
           <h2>{{ card.steal!.title }}</h2>
           <p>{{ card.steal!.summary }}</p>
-          <p class="details">{{ card.steal!.furtherDetails }}</p>
+          <p class="details"><ng-container *ngFor="let part of card.steal!.furtherDetails | linkParts"><a *ngIf="part.href; else plainText" [href]="part.href" target="_blank" rel="noopener noreferrer">{{ part.text }}</a><ng-template #plainText>{{ part.text }}</ng-template></ng-container></p>
           <p class="countdown">{{ stealCountdown(card) }}</p>
           <div class="steal-actions">
             <ion-button color="danger" fill="outline" [disabled]="busy" (click)="resolveSteal(card, false)">
@@ -736,7 +736,7 @@
               <ion-content class="ion-padding">
                 <ion-badge color="medium">Draws {{ card.powerDraws }} power cards</ion-badge>
                 <p>{{ card.summary }}</p>
-                <p>{{ card.furtherDetails }}</p>
+                <p><ng-container *ngFor="let part of card.furtherDetails | linkParts"><a *ngIf="part.href; else plainText" [href]="part.href" target="_blank" rel="noopener noreferrer">{{ part.text }}</a><ng-template #plainText>{{ part.text }}</ng-template></ng-container></p>
               </ion-content>
 
               <ion-footer>
@@ -766,7 +766,7 @@
 
               <ion-content class="ion-padding">
                 <ion-badge [color]="kindColor(card.kind)">{{ card.kind }}</ion-badge>
-                <p>{{ card.description }}</p>
+                <p><ng-container *ngFor="let part of card.description | linkParts"><a *ngIf="part.href; else plainText" [href]="part.href" target="_blank" rel="noopener noreferrer">{{ part.text }}</a><ng-template #plainText>{{ part.text }}</ng-template></ng-container></p>
                 <p *ngIf="card.kind === 'Curse'" class="muted">
                   Curses run on trust: the app only records that it was played. Tell the team you're
                   cursing in the group chat.

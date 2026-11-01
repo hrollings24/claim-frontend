@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 
+import { LinkPartsPipe } from '../link-parts.pipe';
+
 import { BoroughMapComponent } from './borough-map.component';
 import { LobbyPage } from './lobby.page';
 import { LobbyPageRoutingModule } from './lobby-routing.module';
 
 @NgModule({
-  imports: [CommonModule, FormsModule, IonicModule, LobbyPageRoutingModule],
+  imports: [CommonModule, FormsModule, IonicModule, LobbyPageRoutingModule, LinkPartsPipe],
   declarations: [LobbyPage, BoroughMapComponent],
 })
 export class LobbyPageModule {}
