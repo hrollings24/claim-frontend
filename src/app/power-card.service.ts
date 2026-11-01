@@ -9,7 +9,7 @@ export interface PowerCardDefinition {
   description: string;
   /** Curse only: how long it lasts. Null lasts until the cursed team clears it. */
   durationMinutes: number | null;
-  /** Steal, Curse Reverse, Fortify, Swap and Shuffle have rules behind them, so nobody can edit or delete them. */
+  /** The built-in cards (Steal, Curse Reverse, Fortify, Swap, Shuffle, Board Shake) have rules behind them, so nobody can edit or delete them. */
   isBuiltIn: boolean;
 }
 

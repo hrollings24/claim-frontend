@@ -46,10 +46,10 @@ export interface HandCard {
 }
 
 /**
- * Steal, Reverse (Curse Reverse), Fortify, Swap and Shuffle are built in. Curse (cast on another team) and
+ * Steal, Reverse (Curse Reverse), Fortify, Swap, Shuffle and BoardShake are built in. Curse (cast on another team) and
  * Boost (played on yourself) are written by players.
  */
-export type PowerKind = 'Steal' | 'Curse' | 'Boost' | 'Reverse' | 'Fortify' | 'Swap' | 'Shuffle';
+export type PowerKind = 'Steal' | 'Curse' | 'Boost' | 'Reverse' | 'Fortify' | 'Swap' | 'Shuffle' | 'BoardShake';
 
 /** One colour per kind, used everywhere a power card shows its kind. */
 export function powerKindColor(kind: PowerKind): string {
@@ -62,6 +62,7 @@ export function powerKindColor(kind: PowerKind): string {
     case 'Fortify':
     case 'Swap':
     case 'Shuffle':
+    case 'BoardShake':
       return 'tertiary';
     default:
       return 'warning';

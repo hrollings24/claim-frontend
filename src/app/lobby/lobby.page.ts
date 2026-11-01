@@ -525,6 +525,11 @@ export class LobbyPage {
       return;
     }
 
+    if (card.kind === 'BoardShake') {
+      await this.confirmBoardShake(card);
+      return;
+    }
+
     const alert = await this.alerts.create({
       header: `Play ${card.title}?`,
       message: 'It is marked as played straight away. Let the others know in the group chat if it affects them.',
@@ -574,6 +579,20 @@ export class LobbyPage {
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         { text: 'Shuffle', handler: () => void this.act(() => this.gameService.playPower(this.code, card.id)) },
+      ],
+    });
+
+    await alert.present();
+  }
+
+  /** It changes the board for every team, and can't be undone, so it asks first. */
+  private async confirmBoardShake(card: PowerCard): Promise<void> {
+    const alert = await this.alerts.create({
+      header: 'Shake up the board?',
+      message: 'Every borough on the board except the hot one is swapped for new ones — for every team. There\'s no undoing it.',
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Shake it', handler: () => void this.act(() => this.gameService.playPower(this.code, card.id)) },
       ],
     });
 
