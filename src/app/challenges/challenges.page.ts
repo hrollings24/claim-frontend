@@ -24,6 +24,9 @@ export class ChallengesPage {
   /** Which half of the deck to show. Filtering happens here because the list is already whole. */
   filter: ChallengeType | 'All' = 'All';
 
+  /** Whose challenges to show, by name; null shows everyone's. Works alongside the type filter. */
+  author: string | null = null;
+
   constructor(
     private challengeService: ChallengeService,
     private zone: NgZone,
@@ -37,12 +40,18 @@ export class ChallengesPage {
   }
 
   get visible(): Challenge[] {
-    return this.filter === 'All'
-      ? this.challenges
-      : this.challenges.filter(challenge => challenge.type === this.filter);
+    return this.challenges.filter(challenge =>
+      (this.filter === 'All' || challenge.type === this.filter)
+      && (this.author === null || challenge.createdByName === this.author));
   }
 
-  /** True when there are challenges, but none of the kind currently being shown. */
+  /** Everyone who has written a challenge, alphabetically, for the "Created by" filter. */
+  get authors(): string[] {
+    return [...new Set(this.challenges.map(challenge => challenge.createdByName))]
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  /** True when there are challenges, but none that match the filters currently set. */
   get filteredEverythingOut(): boolean {
     return this.challenges.length > 0 && this.visible.length === 0;
   }

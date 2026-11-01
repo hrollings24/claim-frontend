@@ -29,6 +29,15 @@
     <ion-segment-button value="Steal"><ion-label>Steal</ion-label></ion-segment-button>
   </ion-segment>
 
+  <ion-list [inset]="true" class="author-filter" *ngIf="authors.length > 1">
+    <ion-item>
+      <ion-select label="Created by" interface="popover" [(ngModel)]="author">
+        <ion-select-option [value]="null">Everyone</ion-select-option>
+        <ion-select-option *ngFor="let name of authors" [value]="name">{{ name }}</ion-select-option>
+      </ion-select>
+    </ion-item>
+  </ion-list>
+
   <p *ngIf="error" class="ion-text-center ion-padding error">{{ error }}</p>
 
   <ion-list [inset]="true" *ngIf="visible.length > 0">
@@ -61,7 +70,10 @@
   </div>
 
   <div *ngIf="filteredEverythingOut" class="ion-text-center ion-padding empty">
-    <p>No {{ filter === 'Claim' ? 'claim' : 'steal' }} challenges yet.</p>
+    <p>
+      No {{ filter === 'All' ? '' : (filter === 'Claim' ? 'claim ' : 'steal ') }}challenges
+      {{ author ? 'by ' + author : 'yet' }}.
+    </p>
     <ion-button fill="outline" routerLink="/challenges/new">Write one</ion-button>
   </div>
 
