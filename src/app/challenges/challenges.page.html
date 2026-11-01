@@ -29,12 +29,20 @@
     <ion-segment-button value="Steal"><ion-label>Steal <span class="count">{{ typeCount('Steal') }}</span></ion-label></ion-segment-button>
   </ion-segment>
 
-  <ion-list [inset]="true" class="author-filter" *ngIf="authors.length > 1">
-    <ion-item>
+  <ion-list [inset]="true" class="author-filter" *ngIf="challenges.length > 0">
+    <ion-item *ngIf="authors.length > 1">
       <ion-select label="Created by" interface="popover" [(ngModel)]="author">
         <!-- A select option is plain text, so the count goes in brackets rather than a badge. -->
         <ion-select-option [value]="null">Everyone ({{ authorCount(null) }})</ion-select-option>
         <ion-select-option *ngFor="let name of authors" [value]="name">{{ name }} ({{ authorCount(name) }})</ion-select-option>
+      </ion-select>
+    </ion-item>
+
+    <ion-item>
+      <ion-select label="Sort" interface="popover" [(ngModel)]="sort">
+        <ion-select-option value="title">A–Z</ion-select-option>
+        <ion-select-option value="mostDraws">Most power cards</ion-select-option>
+        <ion-select-option value="fewestDraws">Fewest power cards</ion-select-option>
       </ion-select>
     </ion-item>
   </ion-list>
@@ -51,7 +59,7 @@
           <ion-badge [color]="challenge.type === 'Steal' ? 'danger' : 'primary'">
             {{ challenge.type }}
           </ion-badge>
-          <ion-badge color="medium" class="draws">{{ challenge.powerDraws ?? 2 }} power</ion-badge>
+          <ion-badge color="medium" class="draws">{{ drawsOf(challenge) }} power</ion-badge>
           <p>{{ challenge.summary }}</p>
         </ion-label>
       </ion-item>

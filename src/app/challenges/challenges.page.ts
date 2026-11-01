@@ -27,6 +27,12 @@ export class ChallengesPage {
   /** Whose challenges to show, by name; null shows everyone's. Works alongside the type filter. */
   author: string | null = null;
 
+  /**
+   * Alphabetical as the API sends it, or by how many power cards a challenge draws — the
+   * defender's draw, for a steal. Ties stay alphabetical.
+   */
+  sort: 'title' | 'mostDraws' | 'fewestDraws' = 'title';
+
   constructor(
     private challengeService: ChallengeService,
     private zone: NgZone,
@@ -40,9 +46,22 @@ export class ChallengesPage {
   }
 
   get visible(): Challenge[] {
-    return this.challenges.filter(challenge =>
+    const shown = this.challenges.filter(challenge =>
       (this.filter === 'All' || challenge.type === this.filter)
       && (this.author === null || challenge.createdByName === this.author));
+
+    if (this.sort === 'title') {
+      return shown;
+    }
+
+    // Array.sort is stable, and the list arrives alphabetical, so equal counts keep that order.
+    const direction = this.sort === 'mostDraws' ? -1 : 1;
+    return [...shown].sort((a, b) => direction * (this.drawsOf(a) - this.drawsOf(b)));
+  }
+
+  /** Null means the challenge predates the setting, which the game treats as 2. */
+  drawsOf(challenge: Challenge): number {
+    return challenge.powerDraws ?? 2;
   }
 
   /**
